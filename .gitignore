@@ -1,0 +1,11 @@
+################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+.vs/
+.vscode/
+artifacts/
+
+
+ng-form-rules/**/dist/
+**/node_modules
