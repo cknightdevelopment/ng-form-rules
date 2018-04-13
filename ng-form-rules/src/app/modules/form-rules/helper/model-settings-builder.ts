@@ -1,5 +1,8 @@
-import { Property } from "../models/property";
+import { Property, RuleGroup, ValidationFunc, Validation, Rule } from "../models/property";
 
+/**
+ * Utility class for building model settings
+ */
 export class ModelSettingsBuilder {
     /**
      * Creates a property
@@ -14,4 +17,18 @@ export class ModelSettingsBuilder {
         extend(property);
         return property;
     }
+
+    /**
+     * Create a validation with a message
+     * @param message Message when validation fails
+     * @param check Rules for the validation
+     */
+    validation<T>(message: string, check: RuleGroup<T> | Rule<T>): Validation<T> {
+		return {
+            message: message,
+            check: check,
+            condition: null,
+            explicitDependencyProperties: []
+        } as Validation<T>;
+	}
 }

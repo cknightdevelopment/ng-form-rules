@@ -1,8 +1,9 @@
 import { TestBed, inject } from '@angular/core/testing';
 
 import { ModelSettingsBuilder } from './model-settings-builder';
+import { Validation, Rule } from '../models/property';
 
-fdescribe('ModelSettingsBuilder', () => {
+describe('ModelSettingsBuilder', () => {
     let builder: ModelSettingsBuilder = new ModelSettingsBuilder();
 
     it('should be created', () => {
@@ -28,6 +29,16 @@ fdescribe('ModelSettingsBuilder', () => {
             // that should be enough :)
         });
     });
+
+    describe('validation', () => {
+        it('', () => {
+            const msg = "Test message";
+            const v = builder.validation<TestModel>(msg, { func: (x) => x.name == "Tom" });
+
+            expect(v.message).toEqual(msg);
+            expect((v.check as Rule<TestModel>).func({name: "Tom"})).toBeTruthy();
+        });
+    })
 });
 
 class TestModel {
