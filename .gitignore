@@ -9,3 +9,4 @@ artifacts/
 
 ng-form-rules/**/dist/
 **/node_modules
+**/npm-debug.log*
