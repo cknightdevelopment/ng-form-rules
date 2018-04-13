@@ -9,4 +9,4 @@ artifacts/
 
 ng-form-rules/**/dist/
 **/node_modules
-**/npm-debug.log*
+ng-form-rules/package-lock.json**/npm-debug.log*
