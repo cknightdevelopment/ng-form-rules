@@ -21,4 +21,4 @@ script:
   - export CHROME_BIN=chromium-browser
   - cd ng-form-rules
   - npm install
-  - xvfb-run -a npm run test:once
+  - xvfb-run -a npm run test -- --single-run --no-progress --browser=ChromeNoSandbox
