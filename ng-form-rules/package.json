@@ -8,6 +8,7 @@
     "build": "ng build --prod",
     "test": "ng test --browser ChromeHeadless --sourcemaps false",
     "test:once": "ng test --single-run --browser ChromeHeadless --progress false --sourcemaps false",
+    "test:ci": "ng test --single-run --browser ChromeNoSandbox --progress false --sourcemaps false",
     "lint": "ng lint --type-check --format stylish",
     "e2e": "ng e2e",
     "sme": "./node_modules/.bin/source-map-explorer"
