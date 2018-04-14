@@ -5,7 +5,7 @@ export class Property<T> {
     get name(): string {
         return this._name;
     }
-    
+
     constructor(name: string) {
         this._name = name;
     }
@@ -14,10 +14,9 @@ export class Property<T> {
 export type ValidationFunc<T> = (value: T) => boolean;
 
 export interface Validation<T> {
+    check: RuleGroup<T> | Rule<T>;
     message?: string;
-	check: RuleGroup<T> | Rule<T>;
-	condition?: RuleGroup<T> | Rule<T>;
-    explicitDependencyProperties?: string[];
+    condition?: RuleGroup<T> | Rule<T>;
 }
 
 export interface RuleGroup<T> {
@@ -27,4 +26,9 @@ export interface RuleGroup<T> {
 
 export interface Rule<T> {
     func: ValidationFunc<T>;
+    options?: RuleOptions;
+}
+
+export interface RuleOptions {
+    dependencyProperties?: string[];
 }

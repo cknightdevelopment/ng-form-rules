@@ -9,7 +9,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
             this.builder.property("age", p => {
 
             }),
-        ]
+        ];
     }
 }
 
