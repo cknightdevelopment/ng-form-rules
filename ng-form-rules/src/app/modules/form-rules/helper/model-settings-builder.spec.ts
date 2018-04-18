@@ -1,7 +1,8 @@
 import { TestBed, inject } from '@angular/core/testing';
 
 import { ModelSettingsBuilder } from './model-settings-builder';
-import { Validation, Rule, RuleGroup } from '../models/property';
+import { Rule } from '../models/rule';
+import { RuleGroup } from '../models/rule-group';
 
 describe('ModelSettingsBuilder', () => {
     const builder: ModelSettingsBuilder = new ModelSettingsBuilder();

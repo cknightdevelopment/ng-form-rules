@@ -1,4 +1,7 @@
-import { Property, RuleGroup, ValidationFunc, Validation, Rule } from '../models/property';
+import { Property } from '../models/property';
+import { RuleGroup } from '../models/rule-group';
+import { Rule } from '../models/rule';
+import { Validation } from '../models/validation';
 
 /**
  * Utility class for building model settings
