@@ -29,6 +29,20 @@ describe('ModelSettingsBuilder', () => {
             expect(() => builder.property<any>(new Date() as any, p => {})).toThrowError(expectedErrorMsg);
             // that should be enough :)
         });
+
+        it('should call extend function', () => {
+            let tmp;
+            const prop = builder.property<TestModel>('name', p => { tmp = 123; });
+            expect(tmp).toEqual(123);
+        });
+    });
+
+    describe('arrayItemProperty', () => {
+        it('should call extend function', () => {
+            let tmp;
+            const prop = builder.arrayItemProperty<TestModel>(p => { tmp = 123; });
+            expect(tmp).toEqual(123);
+        });
     });
 
     describe('validation', () => {
@@ -36,7 +50,7 @@ describe('ModelSettingsBuilder', () => {
         const model: TestModel = { name: 'Tom', age: 30 };
 
         it('should build validation with simple rules', () => {
-            const v = builder.validation<TestModel>(
+            const v = builder.validationWithMessage<TestModel>(
                 msg,
                 { func: (x) => x.name == 'Tom', options: { dependencyProperties: ['age'] } },
                 { func: (x) => x.age == 30 },
@@ -52,7 +66,7 @@ describe('ModelSettingsBuilder', () => {
         });
 
         it('should build validation with complex rules', () => {
-            const v = builder.validation<TestModel>(
+            const v = builder.validationWithMessage<TestModel>(
                 msg,
                 { rules: [ { func: (x) => x.name == 'Tom', options: { dependencyProperties: ['age'] } } ], any: true },
                 { rules: [ { func: (x) => x.age == 30 } ], any: true },
@@ -65,6 +79,24 @@ describe('ModelSettingsBuilder', () => {
             expect(checkRuleGroup.func(model)).toBeTruthy();
             expect(checkRuleGroup.options.dependencyProperties).toEqual(['age']);
             expect(conditionRuleGroup.func(model)).toBeTruthy();
+        });
+
+        it('should not add a message when not provided one', () => {
+            const v = builder.validation<TestModel>(null, null);
+
+            expect(v.message).toBeUndefined();
+        });
+
+        it('should throw error for invalid message', () => {
+            const expectedErrorMsg = 'Invalid message';
+            expect(() => builder.validationWithMessage<any>(null, null, null)).toThrowError(expectedErrorMsg);
+            expect(() => builder.validationWithMessage<any>(undefined, null, null)).toThrowError(expectedErrorMsg);
+            expect(() => builder.validationWithMessage<any>({ name: 'test' } as any, null, null)).toThrowError(expectedErrorMsg);
+            expect(() => builder.validationWithMessage<any>((() => 'test') as any, null, null)).toThrowError(expectedErrorMsg);
+            expect(() => builder.validationWithMessage<any>([1, 2] as any, null, null)).toThrowError(expectedErrorMsg);
+            expect(() => builder.validationWithMessage<any>(999 as any, null, null)).toThrowError(expectedErrorMsg);
+            expect(() => builder.validationWithMessage<any>(new Date() as any, null, null)).toThrowError(expectedErrorMsg);
+            // that should be enough :)
         });
     });
 });

@@ -2,6 +2,7 @@ import { Property } from '../models/property';
 import { RuleGroup } from '../models/rule-group';
 import { Rule } from '../models/rule';
 import { Validation } from '../models/validation';
+import { ArrayItemProperty } from '../models/array-item-property';
 
 /**
  * Utility class for building model settings
@@ -22,20 +23,49 @@ export class ModelSettingsBuilder {
     }
 
     /**
-     * Create a validation with a message
-     * @param message Message when validation fails
-     * @param check Rules for the validation
+     * Creates a property for an array item
+     * @param extend function to extend the array item property
+     * @returns created array item property
+     */
+    arrayItemProperty<T>(extend: (prop: ArrayItemProperty<T>) => void): ArrayItemProperty<T> {
+        const property = new ArrayItemProperty<T>();
+        extend(property);
+        return property;
+    }
+
+    /**
+     * Creates a validation
+     * @param check Rules for the checks
+     * @param condition Rules for the conditions
      * @returns create validation
      */
     validation<T>(
-        message: string,
         check: RuleGroup<T> | Rule<T>,
         condition?: RuleGroup<T> | Rule<T>
     ): Validation<T> {
         return {
-            message: message,
             check: check,
             condition: condition
         } as Validation<T>;
+    }
+
+    /**
+     * Creates a validation with a message
+     * @param message Message when validation fails
+     * @param check Rules for the checks
+     * @param condition Rules for the conditions
+     * @returns create validation
+     */
+    validationWithMessage<T>(
+        message: string,
+        check: RuleGroup<T> | Rule<T>,
+        condition?: RuleGroup<T> | Rule<T>
+    ): Validation<T> {
+        if (!message || typeof message !== 'string') throw Error('Invalid message');
+
+        const v = this.validation(check, condition);
+        v.message = message;
+
+        return v;
     }
 }
