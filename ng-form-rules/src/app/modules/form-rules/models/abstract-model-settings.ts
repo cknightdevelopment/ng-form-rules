@@ -16,5 +16,5 @@ export abstract class AbstractModelSettings<T> {
         this.properties = this.buildPropertyRules() || [];
     }
 
-    abstract buildPropertyRules(): Property<T>[];
+    protected abstract buildPropertyRules(): Property<T>[];
 }
