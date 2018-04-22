@@ -1,7 +1,7 @@
-import { ValidationFunc } from "./validation-func";
+import { RuleFunc } from "./rule-func";
 import { RuleOptions } from "./rule-options";
 
 export interface Rule<T> {
-    func: ValidationFunc<T>;
+    func: RuleFunc<T>;
     options?: RuleOptions;
 }

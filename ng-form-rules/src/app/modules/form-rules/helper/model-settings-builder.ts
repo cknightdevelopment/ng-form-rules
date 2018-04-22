@@ -1,7 +1,7 @@
 import { Property } from '../models/property';
 import { RuleGroup } from '../models/rule-group';
 import { Rule } from '../models/rule';
-import { Validation } from '../models/validation';
+import { Test } from '../models/test';
 import { ArrayItemProperty } from '../models/array-item-property';
 import { RuleSet } from '../models/rule-set';
 

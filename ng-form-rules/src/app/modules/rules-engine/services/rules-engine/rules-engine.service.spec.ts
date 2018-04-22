@@ -5,7 +5,7 @@ import { MODEL_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/model
 import { AbstractModelSettings } from '../../../form-rules/models/abstract-model-settings';
 import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
-import { ValidationResult } from '../../../form-rules/models/validation-result';
+import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
 
 class PersonModelSettings extends AbstractModelSettings<Person> {
     buildPropertyRules(): Property<Person>[] {
@@ -13,8 +13,8 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
             this.builder.property("name", p => {
                 p.valid = [
                     {
-                        name: "Name equals Chris",
-                        message: "Boo!",
+                        name: "Chris",
+                        message: "Doesn't equal Chris",
                         check: {
                             rules: [
                                 { func: (x) => x.name == "Chris" }
@@ -22,22 +22,34 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         }
                     }
                 ];
-
-                // p.properties = [
-                //     this.builder.property<Car>("make", cp => {})
-                // ];
-
-                // p.arrayItemProperty = this.builder.arrayItemProperty<Car>(aip => {
-                //     aip.valid = [
-                //         this.builder.validation<Car>({ func: (car) => car.year > 2000 })
-                //     ];
-                // });
+                p.edit = [
+                    {
+                        name: "First Character",
+                        message: "The first letter isn't C.",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name[0] == "C" }
+                            ]
+                        }
+                    }
+                ];
+                p.view = [
+                    {
+                        name: "Length",
+                        message: "Not 5 characters long.",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name.length === 5 }
+                            ]
+                        }
+                    }
+                ];
             }),
             this.builder.property("age", p => {
                 p.valid = [
                     {
-                        name: "Age equals 100",
-                        message: "Boo 2!",
+                        name: "100",
+                        message: "Not 100",
                         check: {
                             rules: [
                                 { func: (x) => x.age == 100 }
@@ -63,6 +75,8 @@ class Car {
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
     let personModelSettings: AbstractModelSettings<Person>;
+    const validPerson: Person = { name: "Chris", age: 100 };
+    const invalidPerson: Person = { name: "Tom", age: 999 };
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -104,14 +118,14 @@ describe('RulesEngineService', () => {
     describe('rule set processing', () => {
         it('should process rule group', () => {
             const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
-            expect(svc.processRuleSet({ name: "Chris"}, ruleGroup)).toBeTruthy();
-            expect(svc.processRuleSet({ name: "Bad"}, ruleGroup)).toBeFalsy();
+            expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
+            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
         });
 
         it('should process rule', () => {
             const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
-            expect(svc.processRuleSet({ age: 100}, ruleGroup)).toBeTruthy();
-            expect(svc.processRuleSet({ age: 999}, ruleGroup)).toBeFalsy();
+            expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
+            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
         });
 
         it('should process falsey rule and return positive', () => {
@@ -119,22 +133,89 @@ describe('RulesEngineService', () => {
         });
     });
 
-    describe('validation', () => {
-        it('should handle when valid', () => {
+    describe('running test', () => {
+        it('should handle a passed test', () => {
             const validation = personModelSettings.properties.find(x => x.name == "name").valid[0];
-            const result = svc.validate({ name: "Chris"}, validation);
-            expect(result).toEqual({ valid: true, message: null, name: "Name equals Chris" } as ValidationResult<Person>);
+            const result = svc.runTest(validPerson, validation);
+            expect(result).toEqual({ passed: true, message: null, name: "Chris" } as TestResult<Person>);
         });
 
-        it('should handle when invalid', () => {
+        it('should handle a failed test', () => {
             const validation = personModelSettings.properties.find(x => x.name == "name").valid[0];
-            const result = svc.validate({ name: "Bad"}, validation);
-            expect(result).toEqual({ valid: false, message: "Boo!", name: "Name equals Chris" } as ValidationResult<Person>);
+            const result = svc.runTest(invalidPerson, validation);
+            expect(result).toEqual({ passed: false, message: "Doesn't equal Chris", name: "Chris" } as TestResult<Person>);
         });
 
-        it('should handle when provided a falsey validation', () => {
-            const result = svc.validate({ name: "Whatever"}, null);
-            expect(result).toEqual({ valid: true, message: null, name: null } as ValidationResult<Person>);
+        it('should handle when provided a falsey test', () => {
+            const result = svc.runTest({ name: "Whatever"}, null);
+            expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
+        });
+    });
+
+    describe('running multiple tests', () => {
+        it('should handle passed tests', () => {
+            const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
+            const results = svc.runTests(validPerson, validTests);
+            expect(results.passed).toBeTruthy();
+            expect(results.messages).toEqual([]);
+            expect(results.failedResults).toEqual([]);
+            expect(results.passedResults).toEqual([ { message: null, passed: true, name: "Chris" } ]);
+            expect(results.results).toEqual([ { message: null, passed: true, name: "Chris" } ]);
+        });
+
+        it('should handle failed tests', () => {
+            const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
+            const results = svc.runTests({}, validTests);
+            expect(results.passed).toBeFalsy();
+            expect(results.messages).toEqual(["Doesn't equal Chris"]);
+            expect(results.failedResults).toEqual([{ message: "Doesn't equal Chris", passed: false, name: "Chris" }]);
+            expect(results.passedResults).toEqual([]);
+            expect(results.results).toEqual([{ message: "Doesn't equal Chris", passed: false, name: "Chris" }]);
+        });
+
+        it('should handle when provided falsey tests', () => {
+            const results = svc.runTests({}, null);
+            expect(results.passed).toBeTruthy();
+            expect(results.messages).toEqual([]);
+            expect(results.failedResults).toEqual([]);
+            expect(results.passedResults).toEqual([]);
+            expect(results.results).toEqual([]);
+        });
+
+        it('should handle empty tests array', () => {
+            const results = svc.runTests({}, []);
+            expect(results.passed).toBeTruthy();
+            expect(results.messages).toEqual([]);
+            expect(results.failedResults).toEqual([]);
+            expect(results.passedResults).toEqual([]);
+            expect(results.results).toEqual([]);
+        });
+    });
+
+    describe('validate', () => {
+        it('should run validation tests', () => {
+            const property = personModelSettings.properties.find(x => x.name == "name");
+            const results = svc.validate(invalidPerson, property);
+            expect(results.passed).toBeFalsy();
+            expect(results.messages).toEqual(["Doesn't equal Chris"]);
+        });
+    });
+
+    describe('editable', () => {
+        it('should run editable tests', () => {
+            const property = personModelSettings.properties.find(x => x.name == "name");
+            const results = svc.editable(invalidPerson, property);
+            expect(results.passed).toBeFalsy();
+            expect(results.messages).toEqual(["The first letter isn't C."]);
+        });
+    });
+
+    describe('visible', () => {
+        it('should run visible tests', () => {
+            const property = personModelSettings.properties.find(x => x.name == "name");
+            const results = svc.visible(invalidPerson, property);
+            expect(results.passed).toBeFalsy();
+            expect(results.messages).toEqual(["Not 5 characters long."]);
         });
     });
 });

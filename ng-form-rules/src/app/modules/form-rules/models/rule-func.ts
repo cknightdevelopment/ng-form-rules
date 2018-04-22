@@ -1,0 +1,1 @@
+export type RuleFunc<T> = (value: T) => boolean;

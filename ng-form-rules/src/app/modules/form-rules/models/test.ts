@@ -2,7 +2,7 @@ import { RuleGroup } from "./rule-group";
 import { Rule } from "./rule";
 import { RuleSet } from "./rule-set";
 
-export interface Validation<T> {
+export interface Test<T> {
     message?: string;
     name?: string;
     check: RuleSet<T>;

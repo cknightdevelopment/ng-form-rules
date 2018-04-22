@@ -1,4 +1,4 @@
-import { Validation } from "./validation";
+import { Test } from "./test";
 import { PropertyBase } from "./property-base";
 
 export class Property<T> extends PropertyBase<T> {
