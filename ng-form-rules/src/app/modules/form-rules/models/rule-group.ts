@@ -1,6 +1,7 @@
 import { Rule } from "./rule";
+import { RuleSet } from "./rule-set";
 
 export interface RuleGroup<T> {
     any?: boolean;
-    rules: Array<RuleGroup<T> | Rule<T>>;
+    rules: Array<RuleSet<T>>;
 }

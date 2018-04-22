@@ -4,6 +4,9 @@ import { AbstractModelSettings } from '../../../form-rules/models/abstract-model
 import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { Rule } from '../../../form-rules/models/rule';
+import { Validation } from '../../../form-rules/models/validation';
+import { ValidationResult } from '../../../form-rules/models/validation-result';
+import { RuleSet } from '../../../form-rules/models/rule-set';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -11,9 +14,7 @@ import { Rule } from '../../../form-rules/models/rule';
 @Injectable()
 export class RulesEngineService {
 
-    private modelSettings: {
-        [key: string]: AbstractModelSettings<any>;
-    };
+    private modelSettings: { [key: string]: AbstractModelSettings<any>; };
 
     constructor(
         @Inject(MODEL_SETTINGS_TOKEN) settings: AbstractModelSettings<any>[]
@@ -27,16 +28,45 @@ export class RulesEngineService {
     /**
      * Gets model settings with the provided name
      * @param name Name of model setting
+     * @returns Model settings with the provided name
      */
     getModelSettings<T>(name: string): AbstractModelSettings<T> {
         return this.modelSettings[name];
     }
 
-    process<T>(data: T, rule: RuleGroup<T> | Rule<T>): boolean {
-        const isRuleGroup = this.isRuleGroup(rule);
+    /**
+     * Performs validation on a set of data
+     * @param data Data to perform validation against
+     * @param validation Validation to perform
+     * @returns Result of validation
+     */
+    validate<T>(data: T, validation: Validation<T>): ValidationResult<T> {
+        if (!validation) return { valid: true, name: null, message: null };
+
+        const failedValidationResult: ValidationResult<T> = { valid: false, name: validation.name, message: validation.message };
+
+        const conditionsMet = this.processRuleSet(data, validation.condition);
+        if (!conditionsMet) return failedValidationResult;
+
+        const passed = this.processRuleSet(data, validation.check);
+        return passed
+            ? { valid: true, name: validation.name, message: null }
+            : failedValidationResult;
+    }
+
+    /**
+     * Processes a rule set
+     * @param data Data to process rule set against
+     * @param ruleSet Rule set to process
+     * @returns Result of rule set processing
+     */
+    processRuleSet<T>(data: T, ruleSet: RuleSet<T>): boolean {
+        if (!ruleSet) return true;
+
+        const isRuleGroup = this.isRuleGroup(ruleSet);
         return isRuleGroup
-            ? this.processRuleGroup(data, rule as RuleGroup<T>)
-            : this.processRule(data, rule as Rule<T>);
+            ? this.processRuleGroup(data, ruleSet as RuleGroup<T>)
+            : this.processRule(data, ruleSet as Rule<T>);
     }
 
     private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>): boolean {
@@ -44,7 +74,7 @@ export class RulesEngineService {
 
         for (let i = 0; i < ruleGroup.rules.length; i++) {
             const rule = ruleGroup.rules[i];
-            const passed = this.process(data, rule);
+            const passed = this.processRuleSet(data, rule);
 
             if (passed) passedCount++;
 
@@ -63,7 +93,7 @@ export class RulesEngineService {
         return rule.func(data);
     }
 
-    private isRuleGroup<T>(rule: RuleGroup<T> | Rule<T>) {
+    private isRuleGroup<T>(rule: RuleSet<T>) {
         return !(rule as Rule<T>).func;
     }
 }

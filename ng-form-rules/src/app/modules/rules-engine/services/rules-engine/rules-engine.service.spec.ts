@@ -5,17 +5,22 @@ import { MODEL_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/model
 import { AbstractModelSettings } from '../../../form-rules/models/abstract-model-settings';
 import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
+import { ValidationResult } from '../../../form-rules/models/validation-result';
 
 class PersonModelSettings extends AbstractModelSettings<Person> {
     buildPropertyRules(): Property<Person>[] {
         return [
             this.builder.property("name", p => {
                 p.valid = [
-                    this.builder.validationWithMessage<Person>("Boo!", {
-                        rules: [
-                            { func: (x) => x.name == "Chris" }
-                        ]
-                    })
+                    {
+                        name: "Name equals Chris",
+                        message: "Boo!",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name == "Chris" }
+                            ]
+                        }
+                    }
                 ];
 
                 // p.properties = [
@@ -30,9 +35,15 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
             }),
             this.builder.property("age", p => {
                 p.valid = [
-                    this.builder.validationWithMessage<Person>("Boo 2!", {
-                        func: (x) => x.age === 100
-                    })
+                    {
+                        name: "Age equals 100",
+                        message: "Boo 2!",
+                        check: {
+                            rules: [
+                                { func: (x) => x.age == 100 }
+                            ]
+                        }
+                    }
                 ];
             }),
         ];
@@ -51,6 +62,7 @@ class Car {
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
+    let personModelSettings: AbstractModelSettings<Person>;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -66,6 +78,7 @@ describe('RulesEngineService', () => {
         });
 
         svc = TestBed.get(RulesEngineService);
+        personModelSettings = svc.getModelSettings<Person>("a");
     });
 
     it('should be created', () => {
@@ -74,35 +87,54 @@ describe('RulesEngineService', () => {
 
     describe('compilation', () => {
         it('should set model settings initialized via the injection token', () => {
-            const settings = svc.getModelSettings<Person>("a");
-            expect(settings).toBeTruthy();
+            expect(personModelSettings).toBeTruthy();
         });
 
         it('should not set model setting when not in the injection token', () => {
-            const settings = svc.getModelSettings<Person>("bad-name");
-            expect(settings).toBeFalsy();
+            const badSettings = svc.getModelSettings<Person>("bad-name");
+            expect(badSettings).toBeFalsy();
         });
 
         it('should set properties configured in model settings', () => {
-            const settings = svc.getModelSettings<Person>("a");
-            expect(settings.properties.length).toEqual(2);
-            expect(settings.properties.map(x => x.name)).toEqual(["name", "age"]);
+            expect(personModelSettings.properties.length).toEqual(2);
+            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age"]);
         });
     });
 
-    describe('processing', () => {
+    describe('rule set processing', () => {
         it('should process rule group', () => {
-            const settings = svc.getModelSettings<Person>("a");
-            const ruleGroup = settings.properties.find(x => x.name == "name").valid[0].check;
-            expect(svc.process({ name: "Chris"}, ruleGroup)).toBeTruthy();
-            expect(svc.process({ name: "Bad"}, ruleGroup)).toBeFalsy();
+            const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
+            expect(svc.processRuleSet({ name: "Chris"}, ruleGroup)).toBeTruthy();
+            expect(svc.processRuleSet({ name: "Bad"}, ruleGroup)).toBeFalsy();
         });
 
         it('should process rule', () => {
-            const settings = svc.getModelSettings<Person>("a");
-            const ruleGroup = settings.properties.find(x => x.name == "age").valid[0].check;
-            expect(svc.process({ age: 100}, ruleGroup)).toBeTruthy();
-            expect(svc.process({ age: 999}, ruleGroup)).toBeFalsy();
+            const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
+            expect(svc.processRuleSet({ age: 100}, ruleGroup)).toBeTruthy();
+            expect(svc.processRuleSet({ age: 999}, ruleGroup)).toBeFalsy();
+        });
+
+        it('should process falsey rule and return positive', () => {
+            expect(svc.processRuleSet({ name: "Whatever"}, null)).toBeTruthy();
+        });
+    });
+
+    describe('validation', () => {
+        it('should handle when valid', () => {
+            const validation = personModelSettings.properties.find(x => x.name == "name").valid[0];
+            const result = svc.validate({ name: "Chris"}, validation);
+            expect(result).toEqual({ valid: true, message: null, name: "Name equals Chris" } as ValidationResult<Person>);
+        });
+
+        it('should handle when invalid', () => {
+            const validation = personModelSettings.properties.find(x => x.name == "name").valid[0];
+            const result = svc.validate({ name: "Bad"}, validation);
+            expect(result).toEqual({ valid: false, message: "Boo!", name: "Name equals Chris" } as ValidationResult<Person>);
+        });
+
+        it('should handle when provided a falsey validation', () => {
+            const result = svc.validate({ name: "Whatever"}, null);
+            expect(result).toEqual({ valid: true, message: null, name: null } as ValidationResult<Person>);
         });
     });
 });

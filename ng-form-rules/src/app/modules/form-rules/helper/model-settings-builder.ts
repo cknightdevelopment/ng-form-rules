@@ -3,6 +3,7 @@ import { RuleGroup } from '../models/rule-group';
 import { Rule } from '../models/rule';
 import { Validation } from '../models/validation';
 import { ArrayItemProperty } from '../models/array-item-property';
+import { RuleSet } from '../models/rule-set';
 
 /**
  * Utility class for building model settings
@@ -33,39 +34,39 @@ export class ModelSettingsBuilder {
         return property;
     }
 
-    /**
-     * Creates a validation
-     * @param check Rules for the checks
-     * @param condition Rules for the conditions
-     * @returns create validation
-     */
-    validation<T>(
-        check: RuleGroup<T> | Rule<T>,
-        condition?: RuleGroup<T> | Rule<T>
-    ): Validation<T> {
-        return {
-            check: check,
-            condition: condition
-        } as Validation<T>;
-    }
+    // /**
+    //  * Creates a validation
+    //  * @param check Rules for the checks
+    //  * @param condition Rules for the conditions
+    //  * @returns create validation
+    //  */
+    // validation<T>(
+    //     check: RuleSet<T>,
+    //     condition?: RuleSet<T>
+    // ): Validation<T> {
+    //     return {
+    //         check: check,
+    //         condition: condition
+    //     } as Validation<T>;
+    // }
 
-    /**
-     * Creates a validation with a message
-     * @param message Message when validation fails
-     * @param check Rules for the checks
-     * @param condition Rules for the conditions
-     * @returns create validation
-     */
-    validationWithMessage<T>(
-        message: string,
-        check: RuleGroup<T> | Rule<T>,
-        condition?: RuleGroup<T> | Rule<T>
-    ): Validation<T> {
-        if (!message || typeof message !== 'string') throw Error('Invalid message');
+    // /**
+    //  * Creates a validation with a message
+    //  * @param message Message when validation fails
+    //  * @param check Rules for the checks
+    //  * @param condition Rules for the conditions
+    //  * @returns create validation
+    //  */
+    // validationWithMessage<T>(
+    //     message: string,
+    //     check: RuleSet<T>,
+    //     condition?: RuleSet<T>
+    // ): Validation<T> {
+    //     if (!message || typeof message !== 'string') throw Error('Invalid message');
 
-        const v = this.validation(check, condition);
-        v.message = message;
+    //     const v = this.validation(check, condition);
+    //     v.message = message;
 
-        return v;
-    }
+    //     return v;
+    // }
 }
