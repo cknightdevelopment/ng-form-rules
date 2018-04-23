@@ -5,11 +5,11 @@ import { RulesEngineModule } from '../rules-engine/rules-engine.module';
 @NgModule({
   imports: [
     CommonModule,
-    RulesEngineModule
+    RulesEngineModule,
   ],
   declarations: [],
   exports: [
-      RulesEngineModule
+      RulesEngineModule,
   ]
 })
 export class FormRulesModule { }

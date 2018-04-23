@@ -6,77 +6,14 @@ import { AbstractModelSettings } from '../../../form-rules/models/abstract-model
 import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
-
-class PersonModelSettings extends AbstractModelSettings<Person> {
-    buildPropertyRules(): Property<Person>[] {
-        return [
-            this.builder.property("name", p => {
-                p.valid = [
-                    {
-                        name: "Chris",
-                        message: "Doesn't equal Chris",
-                        check: {
-                            rules: [
-                                { func: (x) => x.name == "Chris" }
-                            ]
-                        }
-                    }
-                ];
-                p.edit = [
-                    {
-                        name: "First Character",
-                        message: "The first letter isn't C.",
-                        check: {
-                            rules: [
-                                { func: (x) => x.name[0] == "C" }
-                            ]
-                        }
-                    }
-                ];
-                p.view = [
-                    {
-                        name: "Length",
-                        message: "Not 5 characters long.",
-                        check: {
-                            rules: [
-                                { func: (x) => x.name.length === 5 }
-                            ]
-                        }
-                    }
-                ];
-            }),
-            this.builder.property("age", p => {
-                p.valid = [
-                    {
-                        name: "100",
-                        message: "Not 100",
-                        check: {
-                            rules: [
-                                { func: (x) => x.age == 100 }
-                            ]
-                        }
-                    }
-                ];
-            }),
-        ];
-    }
-}
-
-class Person {
-    name?: string;
-    age?: number;
-}
-
-class Car {
-    make: string;
-    year: number;
-}
+import { Person } from '../../../test-utils/models/person';
+import { PersonModelSettings } from '../../../test-utils/models/person-model-settings';
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
     let personModelSettings: AbstractModelSettings<Person>;
-    const validPerson: Person = { name: "Chris", age: 100 };
-    const invalidPerson: Person = { name: "Tom", age: 999 };
+    const validPerson: Person = { name: "Chris", age: 100, nicknames: ["C-Dog", "C"] };
+    const invalidPerson: Person = { name: "Tom", age: 999, nicknames: ["T-Dog", "T"] };
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -110,8 +47,8 @@ describe('RulesEngineService', () => {
         });
 
         it('should set properties configured in model settings', () => {
-            expect(personModelSettings.properties.length).toEqual(2);
-            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age"]);
+            expect(personModelSettings.properties.length).toEqual(3);
+            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age", "nicknames"]);
         });
     });
 

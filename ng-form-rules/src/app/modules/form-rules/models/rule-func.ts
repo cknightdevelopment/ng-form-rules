@@ -1,1 +1,1 @@
-export type RuleFunc<T> = (value: T) => boolean;
+export type RuleFunc<T, R> = (value: T, rootValue?: R) => boolean;
