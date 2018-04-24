@@ -10,6 +10,7 @@
     "test:once": "ng test --single-run --browser ChromeNoSandbox --progress false --sourcemaps false",
     "test:ci": "ng test --single-run --browser ChromeNoSandbox --progress false --sourcemaps false",
     "lint": "ng lint --type-check --format stylish",
+    "pre-push": "npm run lint && npm run test:once",
     "e2e": "ng e2e",
     "sme": "./node_modules/.bin/source-map-explorer"
   },

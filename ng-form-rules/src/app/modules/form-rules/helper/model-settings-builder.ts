@@ -15,11 +15,13 @@ export class ModelSettingsBuilder {
      * @param extend function to extend the property
      * @returns created property
      */
-    property<T>(propertyName: keyof T, extend: (prop: Property<T>) => void): Property<T> {
+    property<T>(propertyName: keyof T, extend?: (prop: Property<T>) => void): Property<T> {
         if (!propertyName || typeof propertyName !== 'string') throw Error('Invalid property name');
 
         const property = new Property<T>(propertyName);
-        extend(property);
+
+        if (extend) extend(property);
+
         return property;
     }
 
@@ -33,40 +35,4 @@ export class ModelSettingsBuilder {
         extend(property);
         return property;
     }
-
-    // /**
-    //  * Creates a validation
-    //  * @param check Rules for the checks
-    //  * @param condition Rules for the conditions
-    //  * @returns create validation
-    //  */
-    // validation<T>(
-    //     check: RuleSet<T>,
-    //     condition?: RuleSet<T>
-    // ): Validation<T> {
-    //     return {
-    //         check: check,
-    //         condition: condition
-    //     } as Validation<T>;
-    // }
-
-    // /**
-    //  * Creates a validation with a message
-    //  * @param message Message when validation fails
-    //  * @param check Rules for the checks
-    //  * @param condition Rules for the conditions
-    //  * @returns create validation
-    //  */
-    // validationWithMessage<T>(
-    //     message: string,
-    //     check: RuleSet<T>,
-    //     condition?: RuleSet<T>
-    // ): Validation<T> {
-    //     if (!message || typeof message !== 'string') throw Error('Invalid message');
-
-    //     const v = this.validation(check, condition);
-    //     v.message = message;
-
-    //     return v;
-    // }
 }

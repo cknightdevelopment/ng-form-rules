@@ -30,7 +30,12 @@ describe('ModelSettingsBuilder', () => {
             // that should be enough :)
         });
 
-        it('should call extend function', () => {
+        it('should create property and not try to call extend function when not provided', () => {
+            const prop = builder.property<TestModel>('name');
+            expect(prop.name).toEqual('name');
+        });
+
+        it('should call extend function when provided', () => {
             let tmp;
             const prop = builder.property<TestModel>('name', p => { tmp = 123; });
             expect(tmp).toEqual(123);
