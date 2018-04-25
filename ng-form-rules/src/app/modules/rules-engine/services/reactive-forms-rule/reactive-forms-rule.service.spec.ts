@@ -3,7 +3,7 @@ import { ReactiveFormsRuleService } from "./reactive-forms-rule.service";
 import { ReactiveFormsModule } from "@angular/forms";
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { MODEL_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/model-settings.token";
-import { PersonModelSettings } from "../../../test-utils/models/person-model-settings";
+import { PersonModelSettings, validPerson, invalidPerson } from "../../../test-utils/models/person-model-settings";
 import { Person } from "../../../test-utils/models/person";
 
 describe('ReactiveFormsRuleService', () => {
@@ -46,6 +46,22 @@ describe('ReactiveFormsRuleService', () => {
 
         it('should throw an error provided non-configured model settings name', () => {
             expect(() => svc.createFormGroup('BAD NAME')).toThrowError(`No model setting found with the name "BAD NAME"`);
+        });
+
+        it('should create form group with initial values', () => {
+            const fg = svc.createFormGroup('a', validPerson);
+            const value = fg.getRawValue();
+            expect(value).toEqual(validPerson);
+        });
+
+        it('should create form group as valid when given valid values', () => {
+            const fg = svc.createFormGroup('a', validPerson);
+            expect(fg.valid).toBeTruthy();
+        });
+
+        it('should create form group as invalid when given invalid values', () => {
+            const fg = svc.createFormGroup('a', invalidPerson);
+            expect(fg.valid).toBeFalsy();
         });
     });
 });

@@ -5,6 +5,7 @@ import { Property } from "../../../form-rules/models/property";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { PropertyBase } from "../../../form-rules/models/property-base";
+import { FormatWidth } from "@angular/common";
 
 @Injectable()
 export class ReactiveFormsRuleService {
@@ -27,36 +28,63 @@ export class ReactiveFormsRuleService {
         const settings = this.rulesEngineSvc.getModelSettings(modelSettingName);
         if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
 
-        return this.buildGroup(settings.properties);
+        const formGroup = this.buildGroup(settings.properties, initialData);
+        if (initialData) {
+            formGroup.patchValue(initialData);
+        }
+        return formGroup;
     }
 
-    private buildAbstractControl<T>(property: PropertyBase<T>): AbstractControl {
-        if (property.arrayItemProperty) return this.buildArray(property.arrayItemProperty);
-        else if (property.properties) return this.buildGroup(property.properties);
-        else return this.buildControl(property);
+    private buildAbstractControl<T>(property: PropertyBase<T>, value?: any): AbstractControl {
+        let control: AbstractControl;
+
+        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, value);
+        else if (property.properties) control = this.buildGroup(property.properties, value);
+        else control = this.buildControl(property, value);
+
+        control.setValidators(this.buildValidatorFunction(property));
+
+        return control;
     }
 
-    private buildControl<T>(property: PropertyBase<T>): FormControl {
+    private buildControl<T>(property: PropertyBase<T>, value?: any): FormControl {
         return this.formBuilder.control(null);
     }
 
-    private buildGroup<T>(properties: Property<T>[]): FormGroup {
+    private buildGroup<T>(properties: Property<T>[], value?: any): FormGroup {
         const formGroup = this.formBuilder.group({});
+
         properties.forEach(p => {
-            const ctrl = this.buildAbstractControl(p);
+            const propertyValue = value ? value[p.name] : null;
+            const ctrl = this.buildAbstractControl(p, propertyValue);
             formGroup.addControl(p.name, ctrl);
         });
 
         return formGroup;
     }
 
-    private buildArray<T>(property: ArrayItemProperty<T>): FormArray {
-        return this.formBuilder.array([
-            this.buildAbstractControl(property)
-        ]);
+    private buildArray<T>(property: ArrayItemProperty<T>, value?: any[]): FormArray {
+        value = Array.isArray(value) ? value : [null];
+
+        return this.formBuilder.array(value.map(v => this.buildAbstractControl(property, v)));
     }
 
-    private setValidation() {
+    private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
+        return (control: AbstractControl): ValidationErrors => {
+            const rootValue = (control.root as FormGroup).getRawValue();
+            const controlContextValue = !property["name"] ? control.value : control.parent.getRawValue();
 
+            const testResults = this.rulesEngineSvc.runTests(controlContextValue, property.valid);
+
+            // if valid, Angular reactive forms wants us to return null, otherwise return an object with the validation info
+            return testResults.passed
+                ? null
+                : {
+                    ngFormRules: {
+                        allMessages: testResults.messages,
+                        message: testResults.messages[0]
+                    }
+                };
+        };
     }
 }

@@ -2,6 +2,9 @@ import { AbstractModelSettings } from "../../form-rules/models/abstract-model-se
 import { Person } from "./person";
 import { Property } from "../../form-rules/models/property";
 
+export let validPerson: Person = { name: "Chris", age: 100, nicknames: ["C-Dog", "C"] };
+export let invalidPerson: Person = { name: "Tom", age: 999, nicknames: ["T-Dog", "T", "T-Town"] };
+
 export class PersonModelSettings extends AbstractModelSettings<Person> {
     buildPropertyRules(): Property<Person>[] {
         return [
@@ -54,6 +57,10 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
                 ];
             }),
             this.builder.property("nicknames", p => {
+                p.valid = [
+                    { message: "Must have 2 nicknames", check: { func: x => (x.nicknames || []).length == 2} }
+                ];
+
                 p.arrayItemProperty = this.builder.arrayItemProperty<string>(aip => {
                     aip.valid = [
                         {

@@ -7,13 +7,11 @@ import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
 import { Person } from '../../../test-utils/models/person';
-import { PersonModelSettings } from '../../../test-utils/models/person-model-settings';
+import { PersonModelSettings, validPerson, invalidPerson } from '../../../test-utils/models/person-model-settings';
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
     let personModelSettings: AbstractModelSettings<Person>;
-    const validPerson: Person = { name: "Chris", age: 100, nicknames: ["C-Dog", "C"] };
-    const invalidPerson: Person = { name: "Tom", age: 999, nicknames: ["T-Dog", "T"] };
 
     beforeEach(() => {
         TestBed.configureTestingModule({

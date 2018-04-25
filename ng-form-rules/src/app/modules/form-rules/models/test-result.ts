@@ -15,6 +15,10 @@ export class TestResultsBase<T> {
         return this.results.filter(x => !x.passed);
     }
 
+    get message(): string {
+        return this.messages[0];
+    }
+
     get messages(): string[] {
         const messages = this.failedResults.map(x => x.message);
         return Array.from(new Set(messages));
