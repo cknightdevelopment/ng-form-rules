@@ -8,6 +8,7 @@ import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
 import { Person } from '../../../test-utils/models/person';
 import { PersonModelSettings, validPerson, invalidPerson } from '../../../test-utils/models/person-model-settings';
+import { Rule } from '../../../form-rules/models/rule';
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
@@ -63,6 +64,12 @@ describe('RulesEngineService', () => {
             expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
         });
 
+        it('should process rule using root data', () => {
+            const rule = { func: (x, root) => root.a === 1 } as Rule<any>;
+            expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toBeTruthy();
+            expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toBeFalsy();
+        });
+
         it('should process falsey rule and return positive', () => {
             expect(svc.processRuleSet({ name: "Whatever"}, null)).toBeTruthy();
         });
@@ -70,20 +77,26 @@ describe('RulesEngineService', () => {
 
     describe('running test', () => {
         it('should handle a passed test', () => {
-            const validation = personModelSettings.properties.find(x => x.name == "name").valid[0];
-            const result = svc.runTest(validPerson, validation);
+            const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
+            const result = svc.runTest(validPerson, test);
             expect(result).toEqual({ passed: true, message: null, name: "Chris" } as TestResult<Person>);
         });
 
         it('should handle a failed test', () => {
-            const validation = personModelSettings.properties.find(x => x.name == "name").valid[0];
-            const result = svc.runTest(invalidPerson, validation);
+            const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
+            const result = svc.runTest(invalidPerson, test);
             expect(result).toEqual({ passed: false, message: "Doesn't equal Chris", name: "Chris" } as TestResult<Person>);
         });
 
         it('should handle when provided a falsey test', () => {
             const result = svc.runTest({ name: "Whatever"}, null);
             expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
+        });
+
+        it('should pass rule where condition is not met', () => {
+            const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
+            const result = svc.runTest({}, test);
+            expect(result.passed).toBeTruthy();
         });
     });
 
@@ -93,9 +106,9 @@ describe('RulesEngineService', () => {
             const results = svc.runTests(validPerson, validTests);
             expect(results.passed).toBeTruthy();
             expect(results.messages).toEqual([]);
-            expect(results.failedResults).toEqual([]);
-            expect(results.passedResults).toEqual([ { message: null, passed: true, name: "Chris" } ]);
-            expect(results.results).toEqual([ { message: null, passed: true, name: "Chris" } ]);
+            expect(results.failedResults.length).toEqual(0);
+            expect(results.passedResults.length).toEqual(2);
+            expect(results.results.length).toEqual(2);
         });
 
         it('should handle failed tests', () => {
@@ -103,9 +116,9 @@ describe('RulesEngineService', () => {
             const results = svc.runTests({}, validTests);
             expect(results.passed).toBeFalsy();
             expect(results.messages).toEqual(["Doesn't equal Chris"]);
-            expect(results.failedResults).toEqual([{ message: "Doesn't equal Chris", passed: false, name: "Chris" }]);
-            expect(results.passedResults).toEqual([]);
-            expect(results.results).toEqual([{ message: "Doesn't equal Chris", passed: false, name: "Chris" }]);
+            expect(results.failedResults.length).toEqual(1);
+            expect(results.passedResults.length).toEqual(1);
+            expect(results.results.length).toEqual(2);
         });
 
         it('should handle when provided falsey tests', () => {

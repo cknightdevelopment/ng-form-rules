@@ -69,22 +69,23 @@ export class ReactiveFormsRuleService {
         return this.formBuilder.array(value.map(v => this.buildAbstractControl(property, v)));
     }
 
-    private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
+    private buildValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): ValidatorFn {
         return (control: AbstractControl): ValidationErrors => {
             const rootValue = (control.root as FormGroup).getRawValue();
-            const controlContextValue = !property["name"] ? control.value : control.parent.getRawValue();
 
-            const testResults = this.rulesEngineSvc.runTests(controlContextValue, property.valid);
+            // use the control value if an array item, otherwise use the parent control
+            const controlContextValue = !(property as Property<T>).name ? control.value : control.parent.getRawValue();
+
+            const testResults = this.rulesEngineSvc.runTests(controlContextValue, property.valid, { rootData: rootValue });
 
             // if valid, Angular reactive forms wants us to return null, otherwise return an object with the validation info
             return testResults.passed
                 ? null
-                : {
-                    ngFormRules: {
-                        allMessages: testResults.messages,
-                        message: testResults.messages[0]
-                    }
-                };
+                : { ngFormRules: testResults };
         };
+    }
+
+    private attachValueChangeListeners(control: AbstractControl) {
+
     }
 }

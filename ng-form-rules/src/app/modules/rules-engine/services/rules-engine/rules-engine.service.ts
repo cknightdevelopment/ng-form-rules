@@ -7,6 +7,7 @@ import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';
 import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
 import { RuleSet } from '../../../form-rules/models/rule-set';
+import { TestOptions } from '../../../form-rules/models/test-options';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -40,8 +41,8 @@ export class RulesEngineService {
      * @param property Property to run validation tests for
      * @returns Results of validation tests
      */
-    validate<T>(data: T, property: Property<T>): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.valid) as any as PropertyTestResults<T>;
+    validate<T>(data: T, property: Property<T>, options?: TestOptions): PropertyTestResults<T> {
+        const testResults = this.runTests(data, property.valid, options) as any as PropertyTestResults<T>;
         testResults.propertyName = property.name;
         return testResults;
     }
@@ -52,8 +53,8 @@ export class RulesEngineService {
      * @param property Property to run editability tests for
      * * @returns Results of editability tests
      */
-    editable<T>(data: T, property: Property<T>): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.edit) as any as PropertyTestResults<T>;
+    editable<T>(data: T, property: Property<T>, options?: TestOptions): PropertyTestResults<T> {
+        const testResults = this.runTests(data, property.edit, options) as any as PropertyTestResults<T>;
         testResults.propertyName = property.name;
         return testResults;
     }
@@ -64,8 +65,8 @@ export class RulesEngineService {
      * @param property Property to run visibility tests for
      * * @returns Results of visibility tests
      */
-    visible<T>(data: T, property: Property<T>): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.view) as any as PropertyTestResults<T>;
+    visible<T>(data: T, property: Property<T>, options?: TestOptions): PropertyTestResults<T> {
+        const testResults = this.runTests(data, property.view, options) as any as PropertyTestResults<T>;
         testResults.propertyName = property.name;
         return testResults;
     }
@@ -76,10 +77,10 @@ export class RulesEngineService {
      * @param tests Tests to run
      * @returns Result of tests
      */
-    runTests<T>(data: T, tests: Test<T>[]): TestResultsBase<T> {
+    runTests<T>(data: T, tests: Test<T>[], options?: TestOptions): TestResultsBase<T> {
         if (!tests || !tests.length) return new TestResultsBase([]);
 
-        const testResults = tests.map(t => this.runTest(data, t));
+        const testResults = tests.map(t => this.runTest(data, t, options));
         return new TestResultsBase(testResults);
     }
 
@@ -89,18 +90,17 @@ export class RulesEngineService {
      * @param test Test to run
      * @returns Result of test
      */
-    runTest<T>(data: T, test: Test<T>): TestResult<T> {
+    runTest<T>(data: T, test: Test<T>, options?: TestOptions): TestResult<T> {
         if (!test) return { passed: true, name: null, message: null };
 
+        const passedTestResult: TestResult<T> = { passed: true, name: test.name, message: null };
         const failedTestResult: TestResult<T> = { passed: false, name: test.name, message: test.message };
 
-        const conditionsMet = this.processRuleSet(data, test.condition);
-        if (!conditionsMet) return failedTestResult;
+        const conditionsMet = this.processRuleSet(data, test.condition, options);
+        if (!conditionsMet) return passedTestResult;
 
-        const passed = this.processRuleSet(data, test.check);
-        return passed
-            ? { passed: true, name: test.name, message: null }
-            : failedTestResult;
+        const passed = this.processRuleSet(data, test.check, options);
+        return passed ? passedTestResult : failedTestResult;
     }
 
     /**
@@ -109,21 +109,21 @@ export class RulesEngineService {
      * @param ruleSet Rule set to process
      * @returns Result of rule set processing
      */
-    processRuleSet<T>(data: T, ruleSet: RuleSet<T>): boolean {
+    processRuleSet<T>(data: T, ruleSet: RuleSet<T>, options?: TestOptions): boolean {
         if (!ruleSet) return true;
 
         const isRuleGroup = this.isRuleGroup(ruleSet);
         return isRuleGroup
-            ? this.processRuleGroup(data, ruleSet as RuleGroup<T>)
-            : this.processRule(data, ruleSet as Rule<T>);
+            ? this.processRuleGroup(data, ruleSet as RuleGroup<T>, options)
+            : this.processRule(data, ruleSet as Rule<T>, options);
     }
 
-    private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>): boolean {
+    private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, options?: TestOptions): boolean {
         let passedCount = 0;
 
         for (let i = 0; i < ruleGroup.rules.length; i++) {
             const rule = ruleGroup.rules[i];
-            const passed = this.processRuleSet(data, rule);
+            const passed = this.processRuleSet(data, rule, options);
 
             if (passed) passedCount++;
 
@@ -138,8 +138,9 @@ export class RulesEngineService {
         return (passedCount === ruleGroup.rules.length && !ruleGroup.any);
     }
 
-    private processRule<T>(data: T, rule: Rule<T>): boolean {
-        return rule.func(data);
+    private processRule<T>(data: T, rule: Rule<T>, options?: TestOptions): boolean {
+        const rootData = options ? options.rootData : null;
+        return rule.func(data, rootData);
     }
 
     private isRuleGroup<T>(rule: RuleSet<T>) {
