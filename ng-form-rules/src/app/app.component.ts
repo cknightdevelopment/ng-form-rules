@@ -9,6 +9,5 @@ export class AppComponent {
   title = 'app';
 
   constructor(private rulesEngineSvc: RulesEngineService) {
-      this.rulesEngineSvc.log();
   }
 }

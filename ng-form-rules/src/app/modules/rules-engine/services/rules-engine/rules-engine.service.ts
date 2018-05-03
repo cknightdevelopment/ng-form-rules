@@ -143,7 +143,48 @@ export class RulesEngineService {
         return rule.func(data, rootData);
     }
 
-    private isRuleGroup<T>(rule: RuleSet<T>) {
-        return !(rule as Rule<T>).func;
+    private isRuleGroup<T>(ruleSet: RuleSet<T>) {
+        return !(ruleSet as Rule<T>).func;
+    }
+
+    /**
+     * Gets the depedency properties for an array of tests
+     * @param tests Tests to get the dependency properties for
+     * @returns Dependency properties
+     */
+    getDependencyProperties<T>(tests: Test<T>[]): string[] {
+        if (!tests) return [];
+
+        const deps = tests
+            .map(t => this.getDependencyPropertiesFromTest(t))
+            .reduce((prev, current) => prev.concat(current));
+
+        return Array.from(new Set(deps));
+    }
+
+    private getDependencyPropertiesFromTest<T>(test: Test<T>): string[] {
+        const checkDeps = this.getDependencyPropertiesFromRuleSet<T>(test.check);
+        const conditionDeps = this.getDependencyPropertiesFromRuleSet<T>(test.condition);
+        return Array.from(new Set(checkDeps.concat(conditionDeps)));
+    }
+
+    private getDependencyPropertiesFromRuleSet<T>(ruleSet: RuleSet<T>): string[] {
+        if (!ruleSet) return [];
+
+        const result: string[] = [];
+
+        if (this.isRuleGroup(ruleSet)) {
+            const ruleGroup = ruleSet as RuleGroup<T>;
+            ruleGroup.rules.forEach(x => {
+                result.push(...Array.from(new Set(this.getDependencyPropertiesFromRuleSet(x))));
+            });
+        }
+
+        const rule = ruleSet as Rule<T>;
+        if (rule.options && Array.isArray(rule.options.dependencyProperties)) {
+            result.push(...Array.from(new Set(rule.options.dependencyProperties)));
+        }
+
+        return Array.from(new Set(result));
     }
 }

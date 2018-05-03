@@ -5,12 +5,13 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build --prod",
+    "build": "ng build",
+    "build:prod": "ng build --prod",
     "test": "ng test --browser ChromeNoSandbox --sourcemaps false",
     "test:once": "ng test --single-run --browser ChromeNoSandbox --progress false --sourcemaps false",
     "test:ci": "ng test --single-run --browser ChromeNoSandbox --progress false --sourcemaps false",
     "lint": "ng lint --type-check --format stylish",
-    "pre-push": "npm run lint && npm run test:once",
+    "pre-push": "npm run lint && npm run test:once && npm run build:prod",
     "e2e": "ng e2e",
     "sme": "./node_modules/.bin/source-map-explorer"
   },

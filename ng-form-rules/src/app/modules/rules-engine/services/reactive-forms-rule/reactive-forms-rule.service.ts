@@ -18,37 +18,64 @@ export class ReactiveFormsRuleService {
     /**
      * Creates a form group using an instance of model settings
      * @param modelSettingName Name of the model setting to use
-     * @param initialData Initial data to set the form values to
+     * @param initialValue Initial data to set the form values to
      * @returns Form group created according to defined model settings
      */
     createFormGroup(
         modelSettingName: string,
-        initialData?: any
+        initialValue?: any
     ): FormGroup {
         const settings = this.rulesEngineSvc.getModelSettings(modelSettingName);
         if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
 
-        const formGroup = this.buildGroup(settings.properties, initialData);
-        if (initialData) {
-            formGroup.patchValue(initialData);
+        const formGroup = this.buildGroup(settings.properties, initialValue);
+        this.setupFormControlSubscriptions(formGroup, settings.properties);
+
+        if (initialValue) {
+            formGroup.patchValue(initialValue);
         }
         return formGroup;
     }
 
-    private buildAbstractControl<T>(property: PropertyBase<T>, value?: any): AbstractControl {
+    private setupFormControlSubscriptions<T>(control: AbstractControl, properties: PropertyBase<T>[]) {
+        // CKTODO: arrays, nested properties, parent/root properties
+        properties.forEach(p => {
+            this.setupValueChangeSubscriptions(control, p);
+        });
+    }
+
+    private setupValueChangeSubscriptions<T>(control: AbstractControl, property: PropertyBase<T>, arrayIndex?: number) {
+        const dependencyPropNames = this.rulesEngineSvc.getDependencyProperties(property.valid);
+        const propertyControl = control.get(property["name"] || `[${arrayIndex}]`);
+
+        if (!propertyControl) return;
+
+        dependencyPropNames.forEach(d => {
+            // CKTODO: parse dependency property path
+            const dependencyControl = control.get(d);
+
+            if (!dependencyControl) return;
+
+            dependencyControl.valueChanges.subscribe(value => {
+                propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+            });
+        });
+    }
+
+    private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
         let control: AbstractControl;
 
-        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, value);
-        else if (property.properties) control = this.buildGroup(property.properties, value);
-        else control = this.buildControl(property, value);
+        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, initialValue);
+        else if (property.properties) control = this.buildGroup(property.properties, initialValue);
+        else control = this.buildControl(property, initialValue);
 
         control.setValidators(this.buildValidatorFunction(property));
 
         return control;
     }
 
-    private buildControl<T>(property: PropertyBase<T>, value?: any): FormControl {
-        return this.formBuilder.control(null);
+    private buildControl<T>(property: PropertyBase<T>, initialValue?: any): FormControl {
+        return this.formBuilder.control(initialValue || null);
     }
 
     private buildGroup<T>(properties: Property<T>[], value?: any): FormGroup {
@@ -63,10 +90,10 @@ export class ReactiveFormsRuleService {
         return formGroup;
     }
 
-    private buildArray<T>(property: ArrayItemProperty<T>, value?: any[]): FormArray {
-        value = Array.isArray(value) ? value : [null];
+    private buildArray<T>(property: ArrayItemProperty<T>, initialValue?: any[]): FormArray {
+        initialValue = Array.isArray(initialValue) ? initialValue : [null];
 
-        return this.formBuilder.array(value.map(v => this.buildAbstractControl(property, v)));
+        return this.formBuilder.array(initialValue.map(v => this.buildAbstractControl(property, v)));
     }
 
     private buildValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): ValidatorFn {
@@ -83,9 +110,5 @@ export class ReactiveFormsRuleService {
                 ? null
                 : { ngFormRules: testResults };
         };
-    }
-
-    private attachValueChangeListeners(control: AbstractControl) {
-
     }
 }

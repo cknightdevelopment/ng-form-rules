@@ -5,6 +5,27 @@ import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { MODEL_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/model-settings.token";
 import { PersonModelSettings, validPerson, invalidPerson } from "../../../test-utils/models/person-model-settings";
 import { Person } from "../../../test-utils/models/person";
+import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
+import { Property } from "../../../form-rules/models/property";
+
+export class BlahModelSettings extends AbstractModelSettings<Person> {
+    buildPropertyRules(): Property<Person>[] {
+        return [
+            this.builder.property<Person>("age"),
+            this.builder.property<Person>("name", p => {
+                p.valid = [
+                    {
+                        name: "Blah test",
+                        check: {
+                            func: x => x.name == "Chris" && x.age > 0,
+                            options: { dependencyProperties: ["age"] }
+                        }
+                    }
+                ];
+            })
+        ];
+    }
+}
 
 describe('ReactiveFormsRuleService', () => {
     let svc: ReactiveFormsRuleService;
@@ -20,13 +41,21 @@ describe('ReactiveFormsRuleService', () => {
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
-                        new PersonModelSettings("a")
+                        new PersonModelSettings("a"),
+                        new BlahModelSettings('b')
                     ]
                 }
             ]
         });
 
         svc = TestBed.get(ReactiveFormsRuleService);
+    });
+
+    it('should ... ... ...', () => {
+        const fg = svc.createFormGroup('b', { name: "Chris", age: 30 });
+        expect(fg.valid).toBeTruthy();
+        fg.patchValue({age: -30});
+        expect(fg.valid).toBeFalsy();
     });
 
     it('should be created', () => {

@@ -9,6 +9,7 @@ import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-
 import { Person } from '../../../test-utils/models/person';
 import { PersonModelSettings, validPerson, invalidPerson } from '../../../test-utils/models/person-model-settings';
 import { Rule } from '../../../form-rules/models/rule';
+import { Test } from '../../../form-rules/models/test';
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
@@ -164,6 +165,72 @@ describe('RulesEngineService', () => {
             const results = svc.visible(invalidPerson, property);
             expect(results.passed).toBeFalsy();
             expect(results.messages).toEqual(["Not 5 characters long."]);
+        });
+    });
+
+    describe('dependency properties', () => {
+        it('should get rule check dependency properties', () => {
+            const test = {
+                check: {
+                    func: () => true,
+                    options: { dependencyProperties: ["a"] }
+                }
+            } as Test<Person>;
+            const result = svc.getDependencyProperties([test]);
+
+            expect(result.length).toEqual(1);
+            expect(result[0]).toEqual("a");
+        });
+
+        it('should get rule condition dependency properties', () => {
+            const test = {
+                check: null,
+                condition: {
+                    func: () => true,
+                    options: { dependencyProperties: ["a"] }
+                }
+            } as Test<Person>;
+            const result = svc.getDependencyProperties([test]);
+
+            expect(result.length).toEqual(1);
+            expect(result[0]).toEqual("a");
+        });
+
+        it('should get rule group dependency properties', () => {
+            const test = {
+                check: {
+                    rules: [
+                        {
+                            func: () => true,
+                            options: { dependencyProperties: ["a"] }
+                        },
+                        {
+                            func: () => true,
+                            options: { dependencyProperties: ["b"] }
+                        }
+                    ]
+                }
+            } as Test<Person>;
+            const result = svc.getDependencyProperties([test]);
+
+            expect(result.length).toEqual(2);
+            expect(result[0]).toEqual("a");
+            expect(result[1]).toEqual("b");
+        });
+
+        it('should get unique dependency properties', () => {
+            const test = {
+                check: {
+                    func: () => true,
+                    options: { dependencyProperties: ["a", "b", "a", "c", "a"] }
+                }
+            } as Test<Person>;
+            const result = svc.getDependencyProperties([test]);
+
+            expect(result.length).toEqual(3);
+            expect(result[0]).toEqual("a");
+            expect(result[1]).toEqual("b");
+            expect(result[2]).toEqual("c");
         });
     });
 });
