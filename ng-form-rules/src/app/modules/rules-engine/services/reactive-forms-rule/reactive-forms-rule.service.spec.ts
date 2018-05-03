@@ -7,6 +7,8 @@ import { PersonModelSettings, validPerson, invalidPerson } from "../../../test-u
 import { Person } from "../../../test-utils/models/person";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 import { Property } from "../../../form-rules/models/property";
+import { TraceService } from "../../../utils/trace/trace.service";
+import { TRACE_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/trace-settings.token";
 
 export class BlahModelSettings extends AbstractModelSettings<Person> {
     buildPropertyRules(): Property<Person>[] {
@@ -38,13 +40,15 @@ describe('ReactiveFormsRuleService', () => {
             providers: [
                 ReactiveFormsRuleService,
                 RulesEngineService,
+                TraceService,
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
                         new PersonModelSettings("a"),
                         new BlahModelSettings('b')
                     ]
-                }
+                },
+                { provide: TRACE_SETTINGS_TOKEN, useValue: true }
             ]
         });
 

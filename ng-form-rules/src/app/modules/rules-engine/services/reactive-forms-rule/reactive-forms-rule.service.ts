@@ -6,12 +6,14 @@ import { AbstractModelSettings } from "../../../form-rules/models/abstract-model
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { FormatWidth } from "@angular/common";
+import { TraceService } from "../../../utils/trace/trace.service";
 
 @Injectable()
 export class ReactiveFormsRuleService {
     constructor(
         private rulesEngineSvc: RulesEngineService,
-        private formBuilder: FormBuilder
+        private formBuilder: FormBuilder,
+        private traceSvc: TraceService
     ) {
     }
 
@@ -29,7 +31,7 @@ export class ReactiveFormsRuleService {
         if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
 
         const formGroup = this.buildGroup(settings.properties, initialValue);
-        this.setupFormControlSubscriptions(formGroup, settings.properties);
+        this.setupSubscriptions(formGroup, settings.properties);
 
         if (initialValue) {
             formGroup.patchValue(initialValue);
@@ -37,7 +39,7 @@ export class ReactiveFormsRuleService {
         return formGroup;
     }
 
-    private setupFormControlSubscriptions<T>(control: AbstractControl, properties: PropertyBase<T>[]) {
+    private setupSubscriptions<T>(control: AbstractControl, properties: PropertyBase<T>[]) {
         // CKTODO: arrays, nested properties, parent/root properties
         properties.forEach(p => {
             this.setupValueChangeSubscriptions(control, p);

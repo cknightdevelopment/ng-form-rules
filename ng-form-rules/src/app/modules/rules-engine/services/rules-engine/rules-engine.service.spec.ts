@@ -10,6 +10,8 @@ import { Person } from '../../../test-utils/models/person';
 import { PersonModelSettings, validPerson, invalidPerson } from '../../../test-utils/models/person-model-settings';
 import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';
+import { TraceService } from '../../../utils/trace/trace.service';
+import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace-settings.token';
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
@@ -19,12 +21,14 @@ describe('RulesEngineService', () => {
         TestBed.configureTestingModule({
             providers: [
                 RulesEngineService,
+                TraceService,
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
                         new PersonModelSettings("a")
                     ]
-                }
+                },
+                { provide: TRACE_SETTINGS_TOKEN, useValue: true }
             ]
         });
 

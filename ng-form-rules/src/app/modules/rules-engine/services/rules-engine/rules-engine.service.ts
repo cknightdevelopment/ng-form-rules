@@ -8,6 +8,7 @@ import { Test } from '../../../form-rules/models/test';
 import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
 import { RuleSet } from '../../../form-rules/models/rule-set';
 import { TestOptions } from '../../../form-rules/models/test-options';
+import { TraceService } from '../../../utils/trace/trace.service';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -18,12 +19,15 @@ export class RulesEngineService {
     private modelSettings: { [key: string]: AbstractModelSettings<any>; };
 
     constructor(
-        @Inject(MODEL_SETTINGS_TOKEN) settings: AbstractModelSettings<any>[]
+        @Inject(MODEL_SETTINGS_TOKEN) settings: AbstractModelSettings<any>[],
+        private traceSvc: TraceService
     ) {
         this.modelSettings = {};
 
-        settings
-            .forEach(x => this.modelSettings[x.name] = x);
+        settings.forEach(x => {
+            this.traceSvc.trace(`Registering model settings "${x.name}"`);
+            this.modelSettings[x.name] = x;
+        });
     }
 
     /**
@@ -118,6 +122,21 @@ export class RulesEngineService {
             : this.processRule(data, ruleSet as Rule<T>, options);
     }
 
+    /**
+     * Gets the dependency properties for an array of tests
+     * @param tests Tests to get the dependency properties for
+     * @returns Dependency properties
+     */
+    getDependencyProperties<T>(tests: Test<T>[]): string[] {
+        if (!tests) return [];
+
+        const deps = tests
+            .map(t => this.getDependencyPropertiesFromTest(t))
+            .reduce((prev, current) => prev.concat(current));
+
+        return Array.from(new Set(deps));
+    }
+
     private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, options?: TestOptions): boolean {
         let passedCount = 0;
 
@@ -145,21 +164,6 @@ export class RulesEngineService {
 
     private isRuleGroup<T>(ruleSet: RuleSet<T>) {
         return !(ruleSet as Rule<T>).func;
-    }
-
-    /**
-     * Gets the depedency properties for an array of tests
-     * @param tests Tests to get the dependency properties for
-     * @returns Dependency properties
-     */
-    getDependencyProperties<T>(tests: Test<T>[]): string[] {
-        if (!tests) return [];
-
-        const deps = tests
-            .map(t => this.getDependencyPropertiesFromTest(t))
-            .reduce((prev, current) => prev.concat(current));
-
-        return Array.from(new Set(deps));
     }
 
     private getDependencyPropertiesFromTest<T>(test: Test<T>): string[] {
