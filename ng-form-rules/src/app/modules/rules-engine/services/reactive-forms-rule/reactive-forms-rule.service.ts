@@ -53,8 +53,7 @@ export class ReactiveFormsRuleService {
         if (!propertyControl) return;
 
         dependencyPropNames.forEach(d => {
-            // CKTODO: parse dependency property path
-            const dependencyControl = control.get(d);
+            const dependencyControl = this.findControlRelatively(control, d);
 
             if (!dependencyControl) return;
 
@@ -112,5 +111,50 @@ export class ReactiveFormsRuleService {
                 ? null
                 : { ngFormRules: testResults };
         };
+    }
+
+    private findControlRelatively(control: AbstractControl, path: string) {
+        const relativePaths = this.buildControlRelativePathArray(path);
+
+        if (!relativePaths.length) return null;
+
+        let result: AbstractControl;
+        relativePaths.forEach(pathSegment => {
+            result = this.getControlByPath(result || control, pathSegment);
+            if (!result) return;
+        });
+
+        return result;
+    }
+
+    private buildControlRelativePathArray(relativePath: string): string[] {
+        const result: string[] = [];
+
+        const slashSeparated = relativePath.split("/");
+
+        slashSeparated.forEach(slashItem => {
+            const dotSeparated = slashItem.split(".")
+                .filter(dotItem => !!dotItem);
+
+            if (dotSeparated.length)
+                result.push(...dotSeparated);
+            else
+                result.push(slashItem);
+        });
+
+        return result;
+    }
+
+    private getControlByPath(control: AbstractControl, pathSegment: string): AbstractControl {
+        switch (pathSegment) {
+            case "":
+                return control.root;
+            case "..":
+                return control.parent;
+            case ".":
+                return control;
+            default:
+                return control.get(pathSegment);
+        }
     }
 }

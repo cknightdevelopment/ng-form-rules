@@ -30,9 +30,11 @@ export class ModelSettingsBuilder {
      * @param extend function to extend the array item property
      * @returns created array item property
      */
-    arrayItemProperty<T>(extend: (prop: ArrayItemProperty<T>) => void): ArrayItemProperty<T> {
+    arrayItemProperty<T>(extend?: (prop: ArrayItemProperty<T>) => void): ArrayItemProperty<T> {
         const property = new ArrayItemProperty<T>();
-        extend(property);
+
+        if (extend) extend(property);
+
         return property;
     }
 }

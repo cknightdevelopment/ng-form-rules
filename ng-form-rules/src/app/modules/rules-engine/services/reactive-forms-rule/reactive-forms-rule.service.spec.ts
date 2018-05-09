@@ -9,18 +9,27 @@ import { AbstractModelSettings } from "../../../form-rules/models/abstract-model
 import { Property } from "../../../form-rules/models/property";
 import { TraceService } from "../../../utils/trace/trace.service";
 import { TRACE_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/trace-settings.token";
+import { Car } from "../../../test-utils/models/car";
 
 export class BlahModelSettings extends AbstractModelSettings<Person> {
     buildPropertyRules(): Property<Person>[] {
         return [
             this.builder.property<Person>("age"),
+            this.builder.property<Person>("nicknames", p => {
+                p.arrayItemProperty = this.builder.arrayItemProperty();
+            }),
+            this.builder.property<Person>("car", p => {
+                p.properties = [
+                    this.builder.property<Car>("make")
+                ];
+            }),
             this.builder.property<Person>("name", p => {
                 p.valid = [
                     {
                         name: "Blah test",
                         check: {
-                            func: x => x.name == "Chris" && x.age > 0,
-                            options: { dependencyProperties: ["age"] }
+                            func: x => x.name == "Chris" && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                            options: { dependencyProperties: ["age", "car.make", "nicknames.0"] }
                         }
                     }
                 ];
@@ -56,9 +65,23 @@ describe('ReactiveFormsRuleService', () => {
     });
 
     it('should ... ... ...', () => {
-        const fg = svc.createFormGroup('b', { name: "Chris", age: 30 });
+        const fg = svc.createFormGroup('b', { name: "Chris", age: 30, car: { make: "Subaru" }, nicknames: ["C-TOWN"] });
         expect(fg.valid).toBeTruthy();
         fg.patchValue({age: -30});
+        expect(fg.valid).toBeFalsy();
+    });
+
+    it('should ... ... ...', () => {
+        const fg = svc.createFormGroup('b', { name: "Chris", age: 30, car: { make: "Subaru" }, nicknames: ["C-TOWN"] });
+        expect(fg.valid).toBeTruthy();
+        fg.patchValue({ car: { make: "Ford" } });
+        expect(fg.valid).toBeFalsy();
+    });
+
+    it('should ... ... ...', () => {
+        const fg = svc.createFormGroup('b', { name: "Chris", age: 30, car: { make: "Subaru" }, nicknames: ["C-TOWN"] });
+        expect(fg.valid).toBeTruthy();
+        fg.patchValue({ nicknames: ["Something else"] });
         expect(fg.valid).toBeFalsy();
     });
 

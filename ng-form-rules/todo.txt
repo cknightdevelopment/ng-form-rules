@@ -1,8 +1,6 @@
 - async validators
-- dependency properties
 - rule options
-- tracing
 
 testing:
     - reactive forms
-        - dependency properties
+        - dependency properties variations
