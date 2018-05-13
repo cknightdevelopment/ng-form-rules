@@ -7,11 +7,76 @@ import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
 import { Person } from '../../../test-utils/models/person';
-import { PersonModelSettings, validPerson, invalidPerson } from '../../../test-utils/models/person-model-settings';
 import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace-settings.token';
+
+const validPerson: Person = { name: "Chris", age: 100 };
+const invalidPerson: Person = { name: "Tom", age: 999 };
+
+class PersonModelSettings extends AbstractModelSettings<Person> {
+    buildPropertyRules(): Property<Person>[] {
+        return [
+            this.builder.property("name", p => {
+                p.valid = [
+                    {
+                        name: "Chris",
+                        message: "Doesn't equal Chris",
+                        check: {
+                            // rule group
+                            rules: [
+                                { func: (x) => x.name == "Chris" }
+                            ]
+                        }
+                    },
+                    {
+                        name: "Condition never met",
+                        message: "This should never happen",
+                        check: { func: (x) => false }, // would always fail validation
+                        condition: { func: (x) => false } // condition will never be met
+                    }
+                ];
+                p.edit = [
+                    {
+                        name: "First Character",
+                        message: "The first letter isn't C.",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name.startsWith("C") }
+                            ]
+                        }
+                    }
+                ];
+                p.view = [
+                    {
+                        name: "Length",
+                        message: "Not 5 characters long.",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name.length === 5 }
+                            ]
+                        }
+                    }
+                ];
+            }),
+            this.builder.property("age", p => {
+                p.valid = [
+                    {
+                        name: "100",
+                        message: "Not 100",
+                        check: {
+                            rules: [
+                                // rule
+                                { func: (x) => x.age == 100 }
+                            ]
+                        }
+                    }
+                ];
+            })
+        ];
+    }
+}
 
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
@@ -51,8 +116,8 @@ describe('RulesEngineService', () => {
         });
 
         it('should set properties configured in model settings', () => {
-            expect(personModelSettings.properties.length).toEqual(3);
-            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age", "nicknames"]);
+            expect(personModelSettings.properties.length).toEqual(2);
+            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age"]);
         });
     });
 
@@ -207,19 +272,13 @@ describe('RulesEngineService', () => {
                         {
                             func: () => true,
                             options: { dependencyProperties: ["a"] }
-                        },
-                        {
-                            func: () => true,
-                            options: { dependencyProperties: ["b"] }
                         }
                     ]
                 }
             } as Test<Person>;
             const result = svc.getDependencyProperties([test]);
 
-            expect(result.length).toEqual(2);
             expect(result[0]).toEqual("a");
-            expect(result[1]).toEqual("b");
         });
 
         it('should get unique dependency properties', () => {

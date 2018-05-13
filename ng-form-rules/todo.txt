@@ -1,6 +1,6 @@
 - async validators
 - rule options
+- edit
+- view
 
 testing:
-    - reactive forms
-        - dependency properties variations

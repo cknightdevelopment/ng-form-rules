@@ -10,10 +10,19 @@ export abstract class PropertyBase<T> {
     /**
      * Properties for a complex object
      */
-    properties: Property<any>[];
+    properties?: Property<any>[];
 
     /**
      * Property for an item of an array
      */
-    arrayItemProperty: ArrayItemProperty<any>;
+    arrayItemProperty?: ArrayItemProperty<any>;
+
+    /**
+     * Determines if the property is an ArrayItemProperty
+     * @param property Property to check
+     * @returns Whether or not the property is an ArrayItemProperty
+     */
+    static isArrayItemProperty<T>(property: PropertyBase<T>) {
+        return !(property as Property<T>).name;
+    }
 }

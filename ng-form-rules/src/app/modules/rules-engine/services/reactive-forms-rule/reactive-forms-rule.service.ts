@@ -8,6 +8,9 @@ import { PropertyBase } from "../../../form-rules/models/property-base";
 import { FormatWidth } from "@angular/common";
 import { TraceService } from "../../../utils/trace/trace.service";
 
+/**
+ * Builds reactive forms using configured model settings
+ */
 @Injectable()
 export class ReactiveFormsRuleService {
     constructor(
@@ -31,26 +34,39 @@ export class ReactiveFormsRuleService {
         if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
 
         const formGroup = this.buildGroup(settings.properties, initialValue);
+
         this.setupSubscriptions(formGroup, settings.properties);
 
-        if (initialValue) {
-            formGroup.patchValue(initialValue);
-        }
+        if (initialValue) formGroup.patchValue(initialValue);
+
         return formGroup;
     }
 
-    private setupSubscriptions<T>(control: AbstractControl, properties: PropertyBase<T>[]) {
-        // CKTODO: arrays, nested properties, parent/root properties
+    private setupSubscriptions<T>(control: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number) {
         properties.forEach(p => {
-            this.setupValueChangeSubscriptions(control, p);
+            const propertyControl = this.setupValueChangeSubscriptions(control, p, arrayIndex);
+
+            if (p.properties) {
+                this.setupSubscriptions(propertyControl, p.properties);
+            }
+
+            if (p.arrayItemProperty) {
+                // if there is an arrayItemProperty we know that we are working with a FormArray control
+                const formArrayControl = (propertyControl as FormArray);
+                for (let i = 0; i < formArrayControl.length; i++) {
+                    this.setupSubscriptions(formArrayControl, [p.arrayItemProperty], i);
+                }
+            }
         });
     }
 
     private setupValueChangeSubscriptions<T>(control: AbstractControl, property: PropertyBase<T>, arrayIndex?: number) {
         const dependencyPropNames = this.rulesEngineSvc.getDependencyProperties(property.valid);
-        const propertyControl = control.get(property["name"] || `[${arrayIndex}]`);
+        const propertyControl = PropertyBase.isArrayItemProperty(property)
+            ? (control as FormArray).at(arrayIndex)
+            : control.get((property as Property<T>).name);
 
-        if (!propertyControl) return;
+        if (!propertyControl) return null;
 
         dependencyPropNames.forEach(d => {
             const dependencyControl = this.findControlRelatively(control, d);
@@ -61,6 +77,8 @@ export class ReactiveFormsRuleService {
                 propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
             });
         });
+
+        return propertyControl;
     }
 
     private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
@@ -120,7 +138,7 @@ export class ReactiveFormsRuleService {
 
         let result: AbstractControl;
         relativePaths.forEach(pathSegment => {
-            result = this.getControlByPath(result || control, pathSegment);
+            result = this.getControlByPathSegment(result || control, pathSegment);
             if (!result) return;
         });
 
@@ -130,6 +148,7 @@ export class ReactiveFormsRuleService {
     private buildControlRelativePathArray(relativePath: string): string[] {
         const result: string[] = [];
 
+        // takes care of './'. '../', and '/'
         const slashSeparated = relativePath.split("/");
 
         slashSeparated.forEach(slashItem => {
@@ -145,7 +164,7 @@ export class ReactiveFormsRuleService {
         return result;
     }
 
-    private getControlByPath(control: AbstractControl, pathSegment: string): AbstractControl {
+    private getControlByPathSegment(control: AbstractControl, pathSegment: string): AbstractControl {
         switch (pathSegment) {
             case "":
                 return control.root;
