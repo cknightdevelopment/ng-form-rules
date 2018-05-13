@@ -11,6 +11,8 @@ import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace-settings.token';
+import { CommonService } from '../../../utils/common/common.service';
+import { UtilsModule } from '../../../utils/utils.module';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -27,7 +29,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                             // rule group
                             rules: [
                                 { func: (x) => x.name == "Chris" }
-                            ]
+                            ],
                         }
                     },
                     {
@@ -84,9 +86,11 @@ describe('RulesEngineService', () => {
 
     beforeEach(() => {
         TestBed.configureTestingModule({
+            imports: [
+                UtilsModule
+            ],
             providers: [
                 RulesEngineService,
-                TraceService,
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [

@@ -11,7 +11,7 @@ export class TraceService {
     trace(msg: string) {
         if (!this.doTrace) return;
 
-        const fullMsg = `[NGFR TRACE - ${this.getTimeStamp()}] ${msg}`;
+        const fullMsg = `[NGFR - ${this.getTimeStamp()}] ${msg}`;
         console.log(fullMsg);
     }
 

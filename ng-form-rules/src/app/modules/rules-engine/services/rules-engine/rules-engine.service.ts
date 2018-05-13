@@ -9,6 +9,7 @@ import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-
 import { RuleSet } from '../../../form-rules/models/rule-set';
 import { TestOptions } from '../../../form-rules/models/test-options';
 import { TraceService } from '../../../utils/trace/trace.service';
+import { CommonService } from '../../../utils/common/common.service';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -20,7 +21,8 @@ export class RulesEngineService {
 
     constructor(
         @Inject(MODEL_SETTINGS_TOKEN) settings: AbstractModelSettings<any>[],
-        private traceSvc: TraceService
+        private traceSvc: TraceService,
+        private commonSvc: CommonService
     ) {
         this.modelSettings = {};
 
@@ -36,6 +38,7 @@ export class RulesEngineService {
      * @returns Model settings with the provided name
      */
     getModelSettings<T>(name: string): AbstractModelSettings<T> {
+        this.traceSvc.trace(`Getting model settings "${name}"`);
         return this.modelSettings[name];
     }
 
@@ -134,7 +137,7 @@ export class RulesEngineService {
             .map(t => this.getDependencyPropertiesFromTest(t))
             .reduce((prev, current) => prev.concat(current));
 
-        return Array.from(new Set(deps));
+        return this.commonSvc.unique(deps);
     }
 
     private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, options?: TestOptions): boolean {
@@ -169,7 +172,7 @@ export class RulesEngineService {
     private getDependencyPropertiesFromTest<T>(test: Test<T>): string[] {
         const checkDeps = this.getDependencyPropertiesFromRuleSet<T>(test.check);
         const conditionDeps = this.getDependencyPropertiesFromRuleSet<T>(test.condition);
-        return Array.from(new Set(checkDeps.concat(conditionDeps)));
+        return this.commonSvc.unique(checkDeps.concat(conditionDeps));
     }
 
     private getDependencyPropertiesFromRuleSet<T>(ruleSet: RuleSet<T>): string[] {
@@ -180,15 +183,15 @@ export class RulesEngineService {
         if (this.isRuleGroup(ruleSet)) {
             const ruleGroup = ruleSet as RuleGroup<T>;
             ruleGroup.rules.forEach(x => {
-                result.push(...Array.from(new Set(this.getDependencyPropertiesFromRuleSet(x))));
+                result.push(...this.commonSvc.unique(this.getDependencyPropertiesFromRuleSet(x)));
             });
         }
 
         const rule = ruleSet as Rule<T>;
         if (rule.options && Array.isArray(rule.options.dependencyProperties)) {
-            result.push(...Array.from(new Set(rule.options.dependencyProperties)));
+            result.push(...this.commonSvc.unique(rule.options.dependencyProperties));
         }
 
-        return Array.from(new Set(result));
+        return this.commonSvc.unique(result);
     }
 }

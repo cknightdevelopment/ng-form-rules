@@ -34,9 +34,7 @@ export class ReactiveFormsRuleService {
         if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
 
         const formGroup = this.buildGroup(settings.properties, initialValue);
-
         this.setupSubscriptions(formGroup, settings.properties);
-
         if (initialValue) formGroup.patchValue(initialValue);
 
         return formGroup;
@@ -120,7 +118,9 @@ export class ReactiveFormsRuleService {
             const rootValue = (control.root as FormGroup).getRawValue();
 
             // use the control value if an array item, otherwise use the parent control
-            const controlContextValue = !(property as Property<T>).name ? control.value : control.parent.getRawValue();
+            const controlContextValue = PropertyBase.isArrayItemProperty(property)
+                ? control.value
+                : control.parent.getRawValue();
 
             const testResults = this.rulesEngineSvc.runTests(controlContextValue, property.valid, { rootData: rootValue });
 
