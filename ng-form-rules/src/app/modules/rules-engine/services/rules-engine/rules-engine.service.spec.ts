@@ -13,6 +13,7 @@ import { TraceService } from '../../../utils/trace/trace.service';
 import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace-settings.token';
 import { CommonService } from '../../../utils/common/common.service';
 import { UtilsModule } from '../../../utils/utils.module';
+import { of } from 'rxjs/observable/of';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -28,7 +29,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         check: {
                             // rule group
                             rules: [
-                                { func: (x) => x.name == "Chris" }
+                                { func: (x) => x.name == "Chris", asyncFunc: x => of(x.name == "Chris") }
                             ],
                         }
                     },
@@ -70,7 +71,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         check: {
                             rules: [
                                 // rule
-                                { func: (x) => x.age == 100 }
+                                { func: (x) => x.age == 100, asyncFunc: x => of(x.age == 100) }
                             ]
                         }
                     }
@@ -126,26 +127,61 @@ describe('RulesEngineService', () => {
     });
 
     describe('rule set processing', () => {
-        it('should process rule group', () => {
-            const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
-            expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
-            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+        describe('sync', () => {
+            it('should process rule group', () => {
+                const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
+                expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
+                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+            });
+
+            it('should process rule', () => {
+                const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
+                expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
+                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+            });
+
+            it('should process rule using root data', () => {
+                const rule = { func: (x, root) => root.a === 1 } as Rule<any>;
+                expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toBeTruthy();
+                expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toBeFalsy();
+            });
+
+            it('should process falsey rule and return positive', () => {
+                expect(svc.processRuleSet({ name: "Whatever"}, null)).toBeTruthy();
+            });
         });
 
-        it('should process rule', () => {
-            const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
-            expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
-            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
-        });
+        describe('async', () => {
+            it('should process rule group', () => {
+                const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
+                svc.processRuleSetAsync(validPerson, ruleGroup)
+                    .subscribe(x => expect(x).toBeTruthy());
+                svc.processRuleSetAsync(invalidPerson, ruleGroup)
+                    .subscribe(x => expect(x).toBeFalsy());
+            });
 
-        it('should process rule using root data', () => {
-            const rule = { func: (x, root) => root.a === 1 } as Rule<any>;
-            expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toBeTruthy();
-            expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toBeFalsy();
-        });
+            it('should process rule', () => {
+                const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
 
-        it('should process falsey rule and return positive', () => {
-            expect(svc.processRuleSet({ name: "Whatever"}, null)).toBeTruthy();
+                svc.processRuleSetAsync(validPerson, ruleGroup)
+                    .subscribe(x => expect(x).toBeTruthy());
+                svc.processRuleSetAsync(invalidPerson, ruleGroup)
+                    .subscribe(x => expect(x).toBeFalsy());
+            });
+
+            it('should process rule using root data', () => {
+                const rule = { asyncFunc: (x, root) => of(root.a === 1) } as Rule<any>;
+
+                svc.processRuleSetAsync({}, rule, { rootData: { a: 1 } })
+                    .subscribe(x => expect(x).toBeTruthy());
+                svc.processRuleSetAsync({}, rule, { rootData: { a: 0 } })
+                    .subscribe(x => expect(x).toBeFalsy());
+            });
+
+            it('should process falsey rule and return positive', () => {
+                svc.processRuleSetAsync({ name: "Whatever"}, null)
+                    .subscribe(x => expect(x).toBeTruthy());
+            });
         });
     });
 

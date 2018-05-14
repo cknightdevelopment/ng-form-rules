@@ -10,6 +10,10 @@ import { RuleSet } from '../../../form-rules/models/rule-set';
 import { TestOptions } from '../../../form-rules/models/test-options';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
+import { Observable } from 'rxjs/observable';
+import { from } from 'rxjs/observable/from';
+import { of } from 'rxjs/observable/of';
+import { takeWhile, concatMap, filter } from 'rxjs/operators';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -165,8 +169,39 @@ export class RulesEngineService {
         return rule.func(data, rootData);
     }
 
+    /*** ASYNC STUFF */
+
+    processRuleSetAsync<T>(data: T, ruleSet: RuleSet<T>, options?: TestOptions): Observable<boolean> {
+        if (!ruleSet) return of(true);
+
+        const isRuleGroup = this.isRuleGroup(ruleSet);
+        return isRuleGroup
+            ? this.processRuleGroupAsync(data, ruleSet as RuleGroup<T>, options)
+            : this.processRuleAsync(data, ruleSet as Rule<T>, options);
+    }
+
+    private processRuleGroupAsync<T>(data: T, ruleGroup: RuleGroup<T>, options?: TestOptions): Observable<boolean> {
+        return from(ruleGroup.rules)
+            .pipe(
+                concatMap(ruleSet => this.processRuleSetAsync(data, ruleSet, options)),
+                takeWhile(passed => {
+                    return !((passed && ruleGroup.any) || !passed && !ruleGroup.any);
+                })
+            );
+    }
+
+    private processRuleAsync<T>(data: T, rule: Rule<T>, options?: TestOptions): Observable<boolean> {
+        if (!rule.asyncFunc) return of(true);
+
+        const rootData = options ? options.rootData : null;
+        return rule.asyncFunc(data, rootData);
+    }
+
+    /** END ASYNC STUFF */
+
     private isRuleGroup<T>(ruleSet: RuleSet<T>) {
-        return !(ruleSet as Rule<T>).func;
+        const rule = ruleSet as Rule<T>;
+        return !rule.func && !rule.asyncFunc;
     }
 
     private getDependencyPropertiesFromTest<T>(test: Test<T>): string[] {
