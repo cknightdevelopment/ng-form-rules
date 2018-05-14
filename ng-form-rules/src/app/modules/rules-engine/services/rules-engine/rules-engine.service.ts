@@ -10,7 +10,7 @@ import { RuleSet } from '../../../form-rules/models/rule-set';
 import { TestOptions } from '../../../form-rules/models/test-options';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
-import { Observable } from 'rxjs/observable';
+import { Observable } from 'rxjs/Observable';
 import { from } from 'rxjs/observable/from';
 import { of } from 'rxjs/observable/of';
 import { takeWhile, concatMap, filter } from 'rxjs/operators';
