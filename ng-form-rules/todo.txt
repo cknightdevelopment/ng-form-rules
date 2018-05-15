@@ -1,4 +1,3 @@
-- async validators
 - rule options
 - edit
 - view

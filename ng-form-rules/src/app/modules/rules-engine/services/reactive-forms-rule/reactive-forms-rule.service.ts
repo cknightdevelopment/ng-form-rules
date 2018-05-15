@@ -1,5 +1,6 @@
+// tslint:disable:max-line-length
 import { Injectable } from "@angular/core";
-import { FormGroup, AbstractControl, ValidatorFn, FormBuilder, FormControl, FormArray, ValidationErrors } from '@angular/forms';
+import { FormGroup, AbstractControl, ValidatorFn, FormBuilder, FormControl, FormArray, ValidationErrors, AsyncValidatorFn } from '@angular/forms';
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { Property } from "../../../form-rules/models/property";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
@@ -7,6 +8,9 @@ import { ArrayItemProperty } from "../../../form-rules/models/array-item-propert
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { FormatWidth } from "@angular/common";
 import { TraceService } from "../../../utils/trace/trace.service";
+import { Observable } from "rxjs/Observable";
+import { map } from "rxjs/operators";
+// tslint:enable:max-line-length
 
 /**
  * Builds reactive forms using configured model settings
@@ -87,6 +91,7 @@ export class ReactiveFormsRuleService {
         else control = this.buildControl(property, initialValue);
 
         control.setValidators(this.buildValidatorFunction(property));
+        control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
 
         return control;
     }
@@ -115,19 +120,50 @@ export class ReactiveFormsRuleService {
 
     private buildValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): ValidatorFn {
         return (control: AbstractControl): ValidationErrors => {
-            const rootValue = (control.root as FormGroup).getRawValue();
+            const controlContextValues = this.getControlContextValues(control, property);
 
-            // use the control value if an array item, otherwise use the parent control
-            const controlContextValue = PropertyBase.isArrayItemProperty(property)
-                ? control.value
-                : control.parent.getRawValue();
-
-            const testResults = this.rulesEngineSvc.runTests(controlContextValue, property.valid, { rootData: rootValue });
+            const testResults = this.rulesEngineSvc
+                .runTests(controlContextValues.relative, property.valid, { rootData: controlContextValues.root });
 
             // if valid, Angular reactive forms wants us to return null, otherwise return an object with the validation info
             return testResults.passed
                 ? null
-                : { ngFormRules: testResults };
+                : {
+                    ngFormRules: {
+                        message: testResults.message,
+                        messages: testResults.messages
+                    }
+                };
+        };
+    }
+
+    private buildAsyncValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): AsyncValidatorFn {
+        return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
+            const controlContextValues = this.getControlContextValues(control, property);
+
+            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, { rootData: controlContextValues.root })
+                .pipe(
+                    map(testResults => {
+                        // if valid, Angular reactive forms wants us to return null, otherwise return an object with the validation info
+                        return testResults.passed
+                            ? null
+                            : { ngFormRules: testResults };
+                    })
+                );
+        };
+    }
+
+    private getControlContextValues<T>(control: AbstractControl, property: Property<T> | ArrayItemProperty<T>): ControlContextValues {
+        const rootValue = (control.root as FormGroup).getRawValue();
+
+        // use the control value if an array item, otherwise use the parent control
+        const relativeValue = PropertyBase.isArrayItemProperty(property)
+            ? control.value
+            : control.parent.getRawValue();
+
+        return {
+            root: rootValue,
+            relative: relativeValue
         };
     }
 
@@ -176,4 +212,9 @@ export class ReactiveFormsRuleService {
                 return control.get(pathSegment);
         }
     }
+}
+
+class ControlContextValues {
+    root: any;
+    relative: any;
 }

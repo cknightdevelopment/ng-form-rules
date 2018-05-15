@@ -31,7 +31,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                             rules: [
                                 {
                                     func: (x) => x.name == "Chris",
-                                    asyncFunc: x => { console.log(1); return of(x.name == "Chris"); }
+                                    asyncFunc: x => of(x.name == "Chris")
                                 }
                             ],
                         }
@@ -47,7 +47,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         // condition will never be met
                         condition: {
                             func: (x) => false,
-                            asyncFunc: (x) => { console.log(2); return of(false); }
+                            asyncFunc: (x) => of(false)
                         }
                     }
                 ];

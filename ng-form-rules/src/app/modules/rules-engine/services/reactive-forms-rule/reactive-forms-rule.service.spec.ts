@@ -10,6 +10,7 @@ import { TraceService } from "../../../utils/trace/trace.service";
 import { TRACE_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/trace-settings.token";
 import { Car } from "../../../test-utils/models/car";
 import { UtilsModule } from "../../../utils/utils.module";
+import { of } from "rxjs/observable/of";
 
 const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: "Subaru" }, nicknames: ["C-TOWN", "C"] };
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };
@@ -24,7 +25,7 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
                         {
                             name: "Nickname items test",
                             check: {
-                                func: (x, root) => root.age == 100,
+                                func: (x, root) => root.age > 0,
                                 options: { dependencyProperties: ["/age"] }
                             }
                         }
@@ -53,6 +54,7 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
                         name: "Name test",
                         check: {
                             func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                            asyncFunc: (x, root) => of(root.age == 100),
                             options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
                         }
                     }
@@ -124,6 +126,13 @@ describe('ReactiveFormsRuleService', () => {
         it('should create form group as invalid when given invalid values', () => {
             const fg = svc.createFormGroup('a', invalidPerson);
             expect(fg.valid).toBeFalsy();
+        });
+
+        describe('async', () => {
+            it('should create form group as invalid when given invalid values', () => {
+                const fg = svc.createFormGroup('a', Object.assign({}, validPerson, { age: 200 }));
+                expect(fg.valid).toBeFalsy();
+            });
         });
     });
 
