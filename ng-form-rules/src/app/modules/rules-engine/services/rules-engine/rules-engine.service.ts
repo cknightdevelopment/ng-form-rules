@@ -12,8 +12,10 @@ import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
 import { Observable } from 'rxjs/Observable';
 import { from } from 'rxjs/observable/from';
+import { forkJoin } from 'rxjs/observable/forkJoin';
 import { of } from 'rxjs/observable/of';
-import { takeWhile, concatMap, filter } from 'rxjs/operators';
+import { takeWhile, concatMap, filter, mergeMap, map, flatMap, combineLatest } from 'rxjs/operators';
+import { merge } from 'rxjs/operators/merge';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -171,6 +173,60 @@ export class RulesEngineService {
 
     /*** ASYNC STUFF */
 
+    /**
+     * Runs an array of tests
+     * @param data Data to perform tests against
+     * @param tests Tests to run
+     * @returns Result of tests
+     */
+    runTestsAsync<T>(data: T, tests: Test<T>[], options?: TestOptions): Observable<TestResultsBase<T>> {
+        if (!tests || !tests.length) return of(new TestResultsBase([]));
+
+        const runTest$ = tests
+            .map(test => this.runTestAsync(data, test, options));
+
+        return forkJoin(runTest$)
+            .pipe(
+                map(testResults => new TestResultsBase(testResults))
+            );
+    }
+
+    /**
+     * Performs async test on a set of data
+     * @param data Data to perform test against
+     * @param test Test to run
+     * @returns Result of test
+     */
+    runTestAsync<T>(data: T, test: Test<T>, options?: TestOptions): Observable<TestResult<T>> {
+        if (!test) return of({ passed: true, name: null, message: null });
+
+        const passedTestResult: TestResult<T> = { passed: true, name: test.name, message: null };
+        const failedTestResult: TestResult<T> = { passed: false, name: test.name, message: test.message };
+
+        const conditions$ = this.processRuleSetAsync(data, test.condition, options);
+        const check$ = this.processRuleSetAsync(data, test.check, options);
+
+        return conditions$
+            .pipe(
+                flatMap(conditionsMet => {
+                    if (!conditionsMet) {
+                        return of(passedTestResult);
+                    }
+
+                    return check$
+                        .pipe(
+                            map((passed, i) => passed ? passedTestResult : failedTestResult)
+                        );
+                })
+            );
+    }
+
+    /**
+     * Processes an async rule set
+     * @param data Data to process rule set against
+     * @param ruleSet Rule set to process
+     * @returns Result of rule set processing
+     */
     processRuleSetAsync<T>(data: T, ruleSet: RuleSet<T>, options?: TestOptions): Observable<boolean> {
         if (!ruleSet) return of(true);
 

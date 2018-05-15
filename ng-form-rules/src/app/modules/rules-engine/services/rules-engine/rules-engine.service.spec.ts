@@ -29,15 +29,26 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         check: {
                             // rule group
                             rules: [
-                                { func: (x) => x.name == "Chris", asyncFunc: x => of(x.name == "Chris") }
+                                {
+                                    func: (x) => x.name == "Chris",
+                                    asyncFunc: x => { console.log(1); return of(x.name == "Chris"); }
+                                }
                             ],
                         }
                     },
                     {
                         name: "Condition never met",
                         message: "This should never happen",
-                        check: { func: (x) => false }, // would always fail validation
-                        condition: { func: (x) => false } // condition will never be met
+                        // would always fail validation
+                        check: {
+                            func: (x) => false,
+                            asyncFunc: (x) => of(false)
+                        },
+                        // condition will never be met
+                        condition: {
+                            func: (x) => false,
+                            asyncFunc: (x) => { console.log(2); return of(false); }
+                        }
                     }
                 ];
                 p.edit = [
@@ -186,67 +197,152 @@ describe('RulesEngineService', () => {
     });
 
     describe('running test', () => {
-        it('should handle a passed test', () => {
-            const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
-            const result = svc.runTest(validPerson, test);
-            expect(result).toEqual({ passed: true, message: null, name: "Chris" } as TestResult<Person>);
+        describe('sync', () => {
+            it('should handle a passed test', () => {
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
+                const result = svc.runTest(validPerson, test);
+                expect(result).toEqual({ passed: true, message: null, name: "Chris" } as TestResult<Person>);
+            });
+
+            it('should handle a failed test', () => {
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
+                const result = svc.runTest(invalidPerson, test);
+                expect(result).toEqual({ passed: false, message: "Doesn't equal Chris", name: "Chris" } as TestResult<Person>);
+            });
+
+            it('should handle when provided a falsey test', () => {
+                const result = svc.runTest({ name: "Whatever"}, null);
+                expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
+            });
+
+            it('should pass rule where condition is not met', () => {
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
+                const result = svc.runTest({}, test);
+                expect(result.passed).toBeTruthy();
+            });
         });
 
-        it('should handle a failed test', () => {
-            const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
-            const result = svc.runTest(invalidPerson, test);
-            expect(result).toEqual({ passed: false, message: "Doesn't equal Chris", name: "Chris" } as TestResult<Person>);
-        });
+        describe('async', () => {
+            it('should handle a passed test', () => {
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
+                svc.runTestAsync(validPerson, test)
+                    .subscribe(result => {
+                        expect(result).toEqual({ passed: true, message: null, name: "Chris" } as TestResult<Person>);
+                    });
+            });
 
-        it('should handle when provided a falsey test', () => {
-            const result = svc.runTest({ name: "Whatever"}, null);
-            expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
-        });
+            it('should handle a failed test', () => {
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[0];
+                svc.runTestAsync(invalidPerson, test)
+                    .subscribe(result => {
+                        expect(result).toEqual({ passed: false, message: "Doesn't equal Chris", name: "Chris" } as TestResult<Person>);
+                    });
+            });
 
-        it('should pass rule where condition is not met', () => {
-            const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
-            const result = svc.runTest({}, test);
-            expect(result.passed).toBeTruthy();
+            it('should handle when provided a falsey test', () => {
+                svc.runTestAsync({ name: "Whatever"}, null)
+                    .subscribe(result => {
+                        expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
+                    });
+            });
+
+            it('should pass rule where condition is not met', () => {
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
+                svc.runTestAsync({}, test)
+                    .subscribe(result => {
+                        expect(result.passed).toBeTruthy();
+                    });
+            });
         });
     });
 
     describe('running multiple tests', () => {
-        it('should handle passed tests', () => {
-            const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
-            const results = svc.runTests(validPerson, validTests);
-            expect(results.passed).toBeTruthy();
-            expect(results.messages).toEqual([]);
-            expect(results.failedResults.length).toEqual(0);
-            expect(results.passedResults.length).toEqual(2);
-            expect(results.results.length).toEqual(2);
+        describe('sync', () => {
+            it('should handle passed tests', () => {
+                const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
+                const results = svc.runTests(validPerson, validTests);
+                expect(results.passed).toBeTruthy();
+                expect(results.messages).toEqual([]);
+                expect(results.failedResults.length).toEqual(0);
+                expect(results.passedResults.length).toEqual(2);
+                expect(results.results.length).toEqual(2);
+            });
+
+            it('should handle failed tests', () => {
+                const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
+                const results = svc.runTests({}, validTests);
+                expect(results.passed).toBeFalsy();
+                expect(results.messages).toEqual(["Doesn't equal Chris"]);
+                expect(results.failedResults.length).toEqual(1);
+                expect(results.passedResults.length).toEqual(1);
+                expect(results.results.length).toEqual(2);
+            });
+
+            it('should handle when provided falsey tests', () => {
+                const results = svc.runTests({}, null);
+                expect(results.passed).toBeTruthy();
+                expect(results.messages).toEqual([]);
+                expect(results.failedResults).toEqual([]);
+                expect(results.passedResults).toEqual([]);
+                expect(results.results).toEqual([]);
+            });
+
+            it('should handle empty tests array', () => {
+                const results = svc.runTests({}, []);
+                expect(results.passed).toBeTruthy();
+                expect(results.messages).toEqual([]);
+                expect(results.failedResults).toEqual([]);
+                expect(results.passedResults).toEqual([]);
+                expect(results.results).toEqual([]);
+            });
         });
 
-        it('should handle failed tests', () => {
-            const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
-            const results = svc.runTests({}, validTests);
-            expect(results.passed).toBeFalsy();
-            expect(results.messages).toEqual(["Doesn't equal Chris"]);
-            expect(results.failedResults.length).toEqual(1);
-            expect(results.passedResults.length).toEqual(1);
-            expect(results.results.length).toEqual(2);
-        });
+        describe('async', () => {
+            it('should handle passed tests', () => {
+                const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
+                svc.runTestsAsync(validPerson, validTests)
+                    .subscribe(results => {
+                        expect(results.passed).toBeTruthy();
+                        expect(results.messages).toEqual([]);
+                        expect(results.failedResults.length).toEqual(0);
+                        expect(results.passedResults.length).toEqual(2);
+                        expect(results.results.length).toEqual(2);
+                    });
+            });
 
-        it('should handle when provided falsey tests', () => {
-            const results = svc.runTests({}, null);
-            expect(results.passed).toBeTruthy();
-            expect(results.messages).toEqual([]);
-            expect(results.failedResults).toEqual([]);
-            expect(results.passedResults).toEqual([]);
-            expect(results.results).toEqual([]);
-        });
+            it('should handle failed tests', () => {
+                const validTests = personModelSettings.properties.find(x => x.name == "name").valid;
+                svc.runTestsAsync({}, validTests)
+                    .subscribe(results => {
+                        expect(results.passed).toBeFalsy();
+                        expect(results.messages).toEqual(["Doesn't equal Chris"]);
+                        expect(results.failedResults.length).toEqual(1);
+                        expect(results.passedResults.length).toEqual(1);
+                        expect(results.results.length).toEqual(2);
+                    });
+            });
 
-        it('should handle empty tests array', () => {
-            const results = svc.runTests({}, []);
-            expect(results.passed).toBeTruthy();
-            expect(results.messages).toEqual([]);
-            expect(results.failedResults).toEqual([]);
-            expect(results.passedResults).toEqual([]);
-            expect(results.results).toEqual([]);
+            it('should handle when provided falsey tests', () => {
+                svc.runTestsAsync({}, null)
+                    .subscribe(results => {
+                        expect(results.passed).toBeTruthy();
+                        expect(results.messages).toEqual([]);
+                        expect(results.failedResults).toEqual([]);
+                        expect(results.passedResults).toEqual([]);
+                        expect(results.results).toEqual([]);
+                    });
+            });
+
+            it('should handle empty tests array', () => {
+                svc.runTestsAsync({}, [])
+                    .subscribe(results => {
+                        expect(results.passed).toBeTruthy();
+                        expect(results.messages).toEqual([]);
+                        expect(results.failedResults).toEqual([]);
+                        expect(results.passedResults).toEqual([]);
+                        expect(results.results).toEqual([]);
+                    });
+            });
         });
     });
 
