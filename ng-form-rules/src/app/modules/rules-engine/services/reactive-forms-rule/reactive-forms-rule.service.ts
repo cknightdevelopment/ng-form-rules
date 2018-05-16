@@ -8,7 +8,7 @@ import { ArrayItemProperty } from "../../../form-rules/models/array-item-propert
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { FormatWidth } from "@angular/common";
 import { TraceService } from "../../../utils/trace/trace.service";
-import { Observable } from "rxjs/Observable";
+import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 // tslint:enable:max-line-length
 

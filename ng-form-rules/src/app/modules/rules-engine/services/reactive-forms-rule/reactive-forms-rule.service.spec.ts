@@ -10,7 +10,7 @@ import { TraceService } from "../../../utils/trace/trace.service";
 import { TRACE_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/trace-settings.token";
 import { Car } from "../../../test-utils/models/car";
 import { UtilsModule } from "../../../utils/utils.module";
-import { of } from "rxjs/observable/of";
+import { of } from "rxjs";
 
 const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: "Subaru" }, nicknames: ["C-TOWN", "C"] };
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };

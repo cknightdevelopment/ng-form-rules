@@ -13,7 +13,7 @@ import { TraceService } from '../../../utils/trace/trace.service';
 import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace-settings.token';
 import { CommonService } from '../../../utils/common/common.service';
 import { UtilsModule } from '../../../utils/utils.module';
-import { of } from 'rxjs/observable/of';
+import { of } from 'rxjs';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };

@@ -10,12 +10,8 @@ import { RuleSet } from '../../../form-rules/models/rule-set';
 import { TestOptions } from '../../../form-rules/models/test-options';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
-import { Observable } from 'rxjs/Observable';
-import { from } from 'rxjs/observable/from';
-import { forkJoin } from 'rxjs/observable/forkJoin';
-import { of } from 'rxjs/observable/of';
-import { takeWhile, concatMap, filter, mergeMap, map, flatMap, combineLatest } from 'rxjs/operators';
-import { merge } from 'rxjs/operators/merge';
+import { Observable ,  from ,  forkJoin ,  of } from 'rxjs';
+import { takeWhile, concatMap, filter, mergeMap, map, flatMap, combineLatest ,  merge } from 'rxjs/operators';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
