@@ -5,7 +5,6 @@ export class ControlState {
     private readonly _pristine: boolean;
     private readonly _disabled: boolean;
 
-    // cktodo: use bitwise with '|'
     get untouched(): boolean { return this._untouched; }
     get pristine(): boolean { return this._pristine; }
     get disabled(): boolean { return this._disabled; }

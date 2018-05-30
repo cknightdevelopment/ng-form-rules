@@ -246,7 +246,7 @@ export class RulesEngineService {
     private doProcessRule<T>(rule: Rule<T>, state: TestRunState, isAsync: boolean): boolean {
         // make sure we have the appropriate func to call
         if ((isAsync && !rule.asyncFunc) || (!isAsync && !rule.func)) return false;
-        
+
         // if there is missing data, then assume we should process the rule
         if (!rule.options || !rule.options.controlStateOptions || !state || !state.controlState) return true;
 

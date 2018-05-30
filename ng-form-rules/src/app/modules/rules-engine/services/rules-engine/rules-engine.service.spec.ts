@@ -14,87 +14,16 @@ import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace
 import { CommonService } from '../../../utils/common/common.service';
 import { UtilsModule } from '../../../utils/utils.module';
 import { of } from 'rxjs';
+import { ControlState } from '../../../form-rules/models/control-state';
+import { AbstractControl } from '@angular/forms';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
 
-class PersonModelSettings extends AbstractModelSettings<Person> {
-    buildPropertyRules(): Property<Person>[] {
-        return [
-            this.builder.property("name", p => {
-                p.valid = [
-                    {
-                        name: "Chris",
-                        message: "Doesn't equal Chris",
-                        check: {
-                            // rule group
-                            rules: [
-                                {
-                                    func: (x) => x.name == "Chris",
-                                    asyncFunc: x => of(x.name == "Chris")
-                                }
-                            ],
-                        }
-                    },
-                    {
-                        name: "Condition never met",
-                        message: "This should never happen",
-                        // would always fail validation
-                        check: {
-                            func: (x) => false,
-                            asyncFunc: (x) => of(false)
-                        },
-                        // condition will never be met
-                        condition: {
-                            func: (x) => false,
-                            asyncFunc: (x) => of(false)
-                        }
-                    }
-                ];
-                p.edit = [
-                    {
-                        name: "First Character",
-                        message: "The first letter isn't C.",
-                        check: {
-                            rules: [
-                                { func: (x) => x.name.startsWith("C") }
-                            ]
-                        }
-                    }
-                ];
-                p.view = [
-                    {
-                        name: "Length",
-                        message: "Not 5 characters long.",
-                        check: {
-                            rules: [
-                                { func: (x) => x.name.length === 5 }
-                            ]
-                        }
-                    }
-                ];
-            }),
-            this.builder.property("age", p => {
-                p.valid = [
-                    {
-                        name: "100",
-                        message: "Not 100",
-                        check: {
-                            rules: [
-                                // rule
-                                { func: (x) => x.age == 100, asyncFunc: x => of(x.age == 100) }
-                            ]
-                        }
-                    }
-                ];
-            })
-        ];
-    }
-}
-
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
     let personModelSettings: AbstractModelSettings<Person>;
+    let controlStateOptionsSettings: AbstractModelSettings<ControlStateOptionsSettings>;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -106,7 +35,8 @@ describe('RulesEngineService', () => {
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
-                        new PersonModelSettings("a")
+                        new PersonModelSettings("a"),
+                        new ControlStateOptionsSettings("b")
                     ]
                 },
                 { provide: TRACE_SETTINGS_TOKEN, useValue: true }
@@ -115,6 +45,7 @@ describe('RulesEngineService', () => {
 
         svc = TestBed.get(RulesEngineService);
         personModelSettings = svc.getModelSettings<Person>("a");
+        controlStateOptionsSettings = svc.getModelSettings<Person>("b");
     });
 
     it('should be created', () => {
@@ -432,4 +363,142 @@ describe('RulesEngineService', () => {
             expect(result[2]).toEqual("c");
         });
     });
+
+    describe('control state options', () => {
+        it('should skip validations for disabled controls when control state options dictate', () => {
+            const ruleGroup = controlStateOptionsSettings.properties
+                .find(prop => prop.name == "name")
+                .valid.find(t => t.name == "ChrisSkipDisabled").check;
+
+            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+            expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { disabled: true } as any })).toBeTruthy();
+        });
+
+        it('should skip validations for pristine controls when control state options dictate', () => {
+            const ruleGroup = controlStateOptionsSettings.properties
+                .find(prop => prop.name == "name")
+                .valid.find(t => t.name == "ChrisSkipPristine").check;
+
+            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+            expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { pristine: true } as any })).toBeTruthy();
+        });
+
+        it('should skip validations for untouched controls when control state options dictate', () => {
+            const ruleGroup = controlStateOptionsSettings.properties
+                .find(prop => prop.name == "name")
+                .valid.find(t => t.name == "ChrisSkipUntouched").check;
+
+            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+            expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { untouched: true } as any })).toBeTruthy();
+        });
+    });
 });
+
+class PersonModelSettings extends AbstractModelSettings<Person> {
+    buildPropertyRules(): Property<Person>[] {
+        return [
+            this.builder.property("name", p => {
+                p.valid = [
+                    {
+                        name: "Chris",
+                        message: "Doesn't equal Chris",
+                        check: {
+                            // rule group
+                            rules: [
+                                {
+                                    func: (x) => x.name == "Chris",
+                                    asyncFunc: x => of(x.name == "Chris")
+                                }
+                            ],
+                        }
+                    },
+                    {
+                        name: "Condition never met",
+                        message: "This should never happen",
+                        // would always fail validation
+                        check: {
+                            func: (x) => false,
+                            asyncFunc: (x) => of(false)
+                        },
+                        // condition will never be met
+                        condition: {
+                            func: (x) => false,
+                            asyncFunc: (x) => of(false)
+                        }
+                    }
+                ];
+                p.edit = [
+                    {
+                        name: "First Character",
+                        message: "The first letter isn't C.",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name.startsWith("C") }
+                            ]
+                        }
+                    }
+                ];
+                p.view = [
+                    {
+                        name: "Length",
+                        message: "Not 5 characters long.",
+                        check: {
+                            rules: [
+                                { func: (x) => x.name.length === 5 }
+                            ]
+                        }
+                    }
+                ];
+            }),
+            this.builder.property("age", p => {
+                p.valid = [
+                    {
+                        name: "100",
+                        message: "Not 100",
+                        check: {
+                            rules: [
+                                // rule
+                                { func: (x) => x.age == 100, asyncFunc: x => of(x.age == 100) }
+                            ]
+                        }
+                    }
+                ];
+            })
+        ];
+    }
+}
+
+class ControlStateOptionsSettings extends AbstractModelSettings<Person> {
+    buildPropertyRules(): Property<Person>[] {
+        return [
+            this.builder.property("name", p => {
+                p.valid = [
+                    {
+                        name: "ChrisSkipDisabled",
+                        message: "Doesn't equal Chris",
+                        check: {
+                            func: x => x.name == "Chris",
+                            options: { controlStateOptions: { skipDisabled: true } }
+                        }
+                    },
+                    {
+                        name: "ChrisSkipPristine",
+                        message: "Doesn't equal Chris",
+                        check: {
+                            func: x => x.name == "Chris",
+                            options: { controlStateOptions: { skipPristine: true } }
+                        }
+                    },
+                    {
+                        name: "ChrisSkipUntouched",
+                        message: "Doesn't equal Chris",
+                        check: {
+                            func: x => x.name == "Chris",
+                            options: { controlStateOptions: { skipUntouched: true } }
+                        }
+                    }
+                ];
+            }),
+        ];
+    }
+}
