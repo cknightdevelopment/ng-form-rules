@@ -247,12 +247,11 @@ export class RulesEngineService {
         // make sure we have the appropriate func to call
         if ((isAsync && !rule.asyncFunc) || (!isAsync && !rule.func)) return false;
 
-        // if there is missing data, then assume we should process the rule
-        if (!rule.options || !rule.options.controlStateOptions || !state || !state.controlState) return true;
+        // // if there is missing data, then assume we should process the rule
+        // if (!rule.options || !rule.options.controlStateOptions || !state || !state.controlState) return true;
 
-        if (rule.options.controlStateOptions.skipDisabled && state.controlState.disabled) return false;
-        if (rule.options.controlStateOptions.skipPristine && state.controlState.pristine) return false;
-        if (rule.options.controlStateOptions.skipUntouched && state.controlState.untouched) return false;
+        // if (rule.options.controlStateOptions.skipPristine && state.controlState.pristine) return false;
+        // if (rule.options.controlStateOptions.skipUntouched && state.controlState.untouched) return false;
 
         return true;
     }

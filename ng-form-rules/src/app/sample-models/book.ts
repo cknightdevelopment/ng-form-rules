@@ -16,7 +16,9 @@ export class BookModelSettings extends AbstractModelSettings<Book> {
                 p.valid = [
                     {
                         message: "Cannot be empty",
-                        check: { func: x => !!x.title }
+                        check: {
+                            func: x => !!x.title
+                        },
                     }
                 ];
             }),
@@ -40,7 +42,7 @@ export class BookModelSettings extends AbstractModelSettings<Book> {
                                 )
                         }
                     }
-                ]
+                ];
             })
         ];
     }

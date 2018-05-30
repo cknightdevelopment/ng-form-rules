@@ -10,6 +10,7 @@ import { FormGroup } from '@angular/forms';
 export class AppComponent implements OnInit {
   title = 'app';
   bookFormGroup: FormGroup;
+  submitted = false;
 
   constructor(
     private rulesEngineSvc: RulesEngineService,
@@ -19,5 +20,9 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
      this.bookFormGroup = this.reactiveFormsRuleSvc.createFormGroup('book');
+  }
+
+  submit() {
+    this.submitted = true;
   }
 }

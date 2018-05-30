@@ -128,7 +128,7 @@ export class ReactiveFormsRuleService {
             const controlContextValues = this.getControlContextValues(control, property);
 
             const testResults = this.rulesEngineSvc
-                .runTests(controlContextValues.relative, property.valid, { 
+                .runTests(controlContextValues.relative, property.valid, {
                     rootData: controlContextValues.root,
                     controlState: ControlState.create(control)
                 });
@@ -141,7 +141,7 @@ export class ReactiveFormsRuleService {
         return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
             const controlContextValues = this.getControlContextValues(control, property);
 
-            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, { 
+            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, {
                 rootData: controlContextValues.root,
                 controlState: ControlState.create(control)
             }).pipe(

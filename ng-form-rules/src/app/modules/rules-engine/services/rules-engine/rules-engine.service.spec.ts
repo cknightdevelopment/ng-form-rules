@@ -23,7 +23,7 @@ const invalidPerson: Person = { name: "Tom", age: 999 };
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
     let personModelSettings: AbstractModelSettings<Person>;
-    let controlStateOptionsSettings: AbstractModelSettings<ControlStateOptionsSettings>;
+    // let controlStateOptionsSettings: AbstractModelSettings<ControlStateOptionsSettings>;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -36,7 +36,7 @@ describe('RulesEngineService', () => {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
                         new PersonModelSettings("a"),
-                        new ControlStateOptionsSettings("b")
+                        // new ControlStateOptionsSettings("b")
                     ]
                 },
                 { provide: TRACE_SETTINGS_TOKEN, useValue: true }
@@ -45,7 +45,7 @@ describe('RulesEngineService', () => {
 
         svc = TestBed.get(RulesEngineService);
         personModelSettings = svc.getModelSettings<Person>("a");
-        controlStateOptionsSettings = svc.getModelSettings<Person>("b");
+        // controlStateOptionsSettings = svc.getModelSettings<Person>("b");
     });
 
     it('should be created', () => {
@@ -364,34 +364,25 @@ describe('RulesEngineService', () => {
         });
     });
 
-    describe('control state options', () => {
-        it('should skip validations for disabled controls when control state options dictate', () => {
-            const ruleGroup = controlStateOptionsSettings.properties
-                .find(prop => prop.name == "name")
-                .valid.find(t => t.name == "ChrisSkipDisabled").check;
+    // describe('control state options', () => {
+    //     it('should skip validations for pristine controls when control state options dictate', () => {
+    //         const ruleGroup = controlStateOptionsSettings.properties
+    //             .find(prop => prop.name == "name")
+    //             .valid.find(t => t.name == "ChrisSkipPristine").check;
 
-            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
-            expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { disabled: true } as any })).toBeTruthy();
-        });
+    //         expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+    //         expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { pristine: true } as any })).toBeTruthy();
+    //     });
 
-        it('should skip validations for pristine controls when control state options dictate', () => {
-            const ruleGroup = controlStateOptionsSettings.properties
-                .find(prop => prop.name == "name")
-                .valid.find(t => t.name == "ChrisSkipPristine").check;
+    //     it('should skip validations for untouched controls when control state options dictate', () => {
+    //         const ruleGroup = controlStateOptionsSettings.properties
+    //             .find(prop => prop.name == "name")
+    //             .valid.find(t => t.name == "ChrisSkipUntouched").check;
 
-            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
-            expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { pristine: true } as any })).toBeTruthy();
-        });
-
-        it('should skip validations for untouched controls when control state options dictate', () => {
-            const ruleGroup = controlStateOptionsSettings.properties
-                .find(prop => prop.name == "name")
-                .valid.find(t => t.name == "ChrisSkipUntouched").check;
-
-            expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
-            expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { untouched: true } as any })).toBeTruthy();
-        });
-    });
+    //         expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+    //         expect(svc.processRuleSet(invalidPerson, ruleGroup, { controlState: { untouched: true } as any })).toBeTruthy();
+    //     });
+    // });
 });
 
 class PersonModelSettings extends AbstractModelSettings<Person> {
@@ -468,37 +459,29 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
     }
 }
 
-class ControlStateOptionsSettings extends AbstractModelSettings<Person> {
-    buildPropertyRules(): Property<Person>[] {
-        return [
-            this.builder.property("name", p => {
-                p.valid = [
-                    {
-                        name: "ChrisSkipDisabled",
-                        message: "Doesn't equal Chris",
-                        check: {
-                            func: x => x.name == "Chris",
-                            options: { controlStateOptions: { skipDisabled: true } }
-                        }
-                    },
-                    {
-                        name: "ChrisSkipPristine",
-                        message: "Doesn't equal Chris",
-                        check: {
-                            func: x => x.name == "Chris",
-                            options: { controlStateOptions: { skipPristine: true } }
-                        }
-                    },
-                    {
-                        name: "ChrisSkipUntouched",
-                        message: "Doesn't equal Chris",
-                        check: {
-                            func: x => x.name == "Chris",
-                            options: { controlStateOptions: { skipUntouched: true } }
-                        }
-                    }
-                ];
-            }),
-        ];
-    }
-}
+// class ControlStateOptionsSettings extends AbstractModelSettings<Person> {
+//     buildPropertyRules(): Property<Person>[] {
+//         return [
+//             this.builder.property("name", p => {
+//                 p.valid = [
+//                     {
+//                         name: "ChrisSkipPristine",
+//                         message: "Doesn't equal Chris",
+//                         check: {
+//                             func: x => x.name == "Chris",
+//                             options: { controlStateOptions: { skipPristine: true } }
+//                         }
+//                     },
+//                     {
+//                         name: "ChrisSkipUntouched",
+//                         message: "Doesn't equal Chris",
+//                         check: {
+//                             func: x => x.name == "Chris",
+//                             options: { controlStateOptions: { skipUntouched: true } }
+//                         }
+//                     }
+//                 ];
+//             }),
+//         ];
+//     }
+// }

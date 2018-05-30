@@ -15,3 +15,6 @@
 
 
 # Post MVP Ideas
+- control state options
+  - skip pristine
+  - skip untouched
