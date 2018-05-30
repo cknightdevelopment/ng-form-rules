@@ -5,7 +5,7 @@ import { MODEL_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/model
 import { AbstractModelSettings } from '../../../form-rules/models/abstract-model-settings';
 import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
-import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
+import { TestResult } from '../../../form-rules/models/test-result';
 import { Person } from '../../../test-utils/models/person';
 import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';

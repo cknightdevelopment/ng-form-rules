@@ -5,13 +5,15 @@ import { Property } from '../../../form-rules/models/property';
 import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';
-import { TestResult, PropertyTestResults, TestResultsBase } from '../../../form-rules/models/test-result';
+import { TestResult } from '../../../form-rules/models/test-result';
 import { RuleSet } from '../../../form-rules/models/rule-set';
-import { TestOptions } from '../../../form-rules/models/test-options';
+import { TestRunState } from '../../../form-rules/models/test-run-state';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
-import { Observable ,  from ,  forkJoin ,  of } from 'rxjs';
-import { takeWhile, concatMap, filter, mergeMap, map, flatMap, combineLatest ,  merge } from 'rxjs/operators';
+import { Observable, from , forkJoin, of } from 'rxjs';
+import { takeWhile, concatMap, filter, map, flatMap } from 'rxjs/operators';
+import { TestResultsBase } from '../../../form-rules/models/test-results-base';
+import { PropertyTestResults } from '../../../form-rules/models/property-test-result';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -65,8 +67,8 @@ export class RulesEngineService {
      * @param property Property to run validation tests for
      * @returns Results of validation tests
      */
-    validate<T>(data: T, property: Property<T>, options?: TestOptions): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.valid, options) as any as PropertyTestResults<T>;
+    validate<T>(data: T, property: Property<T>, state?: TestRunState): PropertyTestResults<T> {
+        const testResults = this.runTests(data, property.valid, state) as any as PropertyTestResults<T>;
         testResults.propertyName = property.name;
         return testResults;
     }
@@ -77,8 +79,8 @@ export class RulesEngineService {
      * @param property Property to run editability tests for
      * * @returns Results of editability tests
      */
-    editable<T>(data: T, property: Property<T>, options?: TestOptions): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.edit, options) as any as PropertyTestResults<T>;
+    editable<T>(data: T, property: Property<T>, state?: TestRunState): PropertyTestResults<T> {
+        const testResults = this.runTests(data, property.edit, state) as any as PropertyTestResults<T>;
         testResults.propertyName = property.name;
         return testResults;
     }
@@ -89,8 +91,8 @@ export class RulesEngineService {
      * @param property Property to run visibility tests for
      * * @returns Results of visibility tests
      */
-    visible<T>(data: T, property: Property<T>, options?: TestOptions): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.view, options) as any as PropertyTestResults<T>;
+    visible<T>(data: T, property: Property<T>, state?: TestRunState): PropertyTestResults<T> {
+        const testResults = this.runTests(data, property.view, state) as any as PropertyTestResults<T>;
         testResults.propertyName = property.name;
         return testResults;
     }
@@ -101,10 +103,10 @@ export class RulesEngineService {
      * @param tests Tests to run
      * @returns Result of tests
      */
-    runTests<T>(data: T, tests: Test<T>[], options?: TestOptions): TestResultsBase<T> {
+    runTests<T>(data: T, tests: Test<T>[], state?: TestRunState): TestResultsBase<T> {
         if (!tests || !tests.length) return new TestResultsBase([]);
 
-        const testResults = tests.map(t => this.runTest(data, t, options));
+        const testResults = tests.map(t => this.runTest(data, t, state));
         return new TestResultsBase(testResults);
     }
 
@@ -114,11 +116,11 @@ export class RulesEngineService {
      * @param tests Tests to run
      * @returns Result of tests
      */
-    runTestsAsync<T>(data: T, tests: Test<T>[], options?: TestOptions): Observable<TestResultsBase<T>> {
+    runTestsAsync<T>(data: T, tests: Test<T>[], state?: TestRunState): Observable<TestResultsBase<T>> {
         if (!tests || !tests.length) return of(new TestResultsBase([]));
 
         const runTest$ = tests
-            .map(test => this.runTestAsync(data, test, options));
+            .map(test => this.runTestAsync(data, test, state));
 
         return forkJoin(runTest$)
             .pipe(
@@ -132,16 +134,16 @@ export class RulesEngineService {
      * @param test Test to run
      * @returns Result of test
      */
-    runTest<T>(data: T, test: Test<T>, options?: TestOptions): TestResult<T> {
+    runTest<T>(data: T, test: Test<T>, state?: TestRunState): TestResult<T> {
         if (!test) return { passed: true, name: null, message: null };
 
         const passedTestResult: TestResult<T> = { passed: true, name: test.name, message: null };
         const failedTestResult: TestResult<T> = { passed: false, name: test.name, message: test.message };
 
-        const conditionsMet = this.processRuleSet(data, test.condition, options);
+        const conditionsMet = this.processRuleSet(data, test.condition, state);
         if (!conditionsMet) return passedTestResult;
 
-        const passed = this.processRuleSet(data, test.check, options);
+        const passed = this.processRuleSet(data, test.check, state);
         return passed ? passedTestResult : failedTestResult;
     }
 
@@ -151,14 +153,14 @@ export class RulesEngineService {
      * @param test Test to run
      * @returns Result of test
      */
-    runTestAsync<T>(data: T, test: Test<T>, options?: TestOptions): Observable<TestResult<T>> {
+    runTestAsync<T>(data: T, test: Test<T>, state?: TestRunState): Observable<TestResult<T>> {
         if (!test) return of({ passed: true, name: null, message: null });
 
         const passedTestResult: TestResult<T> = { passed: true, name: test.name, message: null };
         const failedTestResult: TestResult<T> = { passed: false, name: test.name, message: test.message };
 
-        const condition$ = this.processRuleSetAsync(data, test.condition, options);
-        const check$ = this.processRuleSetAsync(data, test.check, options);
+        const condition$ = this.processRuleSetAsync(data, test.condition, state);
+        const check$ = this.processRuleSetAsync(data, test.check, state);
 
         return condition$
             .pipe(
@@ -179,13 +181,13 @@ export class RulesEngineService {
      * @param ruleSet Rule set to process
      * @returns Result of rule set processing
      */
-    processRuleSet<T>(data: T, ruleSet: RuleSet<T>, options?: TestOptions): boolean {
+    processRuleSet<T>(data: T, ruleSet: RuleSet<T>, state?: TestRunState): boolean {
         if (!ruleSet) return true;
 
         const isRuleGroup = this.isRuleGroup(ruleSet);
         return isRuleGroup
-            ? this.processRuleGroup(data, ruleSet as RuleGroup<T>, options)
-            : this.processRule(data, ruleSet as Rule<T>, options);
+            ? this.processRuleGroup(data, ruleSet as RuleGroup<T>, state)
+            : this.processRule(data, ruleSet as Rule<T>, state);
     }
 
     /**
@@ -194,49 +196,65 @@ export class RulesEngineService {
      * @param ruleSet Rule set to process
      * @returns Result of rule set processing
      */
-    processRuleSetAsync<T>(data: T, ruleSet: RuleSet<T>, options?: TestOptions): Observable<boolean> {
+    processRuleSetAsync<T>(data: T, ruleSet: RuleSet<T>, state?: TestRunState): Observable<boolean> {
         if (!ruleSet) return of(true);
 
         const isRuleGroup = this.isRuleGroup(ruleSet);
         return isRuleGroup
-            ? this.processRuleGroupAsync(data, ruleSet as RuleGroup<T>, options)
-            : this.processRuleAsync(data, ruleSet as Rule<T>, options);
+            ? this.processRuleGroupAsync(data, ruleSet as RuleGroup<T>, state)
+            : this.processRuleAsync(data, ruleSet as Rule<T>, state);
     }
 
-    private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, options?: TestOptions): boolean {
+    private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): boolean {
         let passedCount = 0;
 
         for (let i = 0; i < ruleGroup.rules.length; i++) {
             const rule = ruleGroup.rules[i];
-            const passed = this.processRuleSet(data, rule, options);
+            const passed = this.processRuleSet(data, rule, state);
 
             if (this.canShortCircuitRuleGroup(passed, ruleGroup)) return passed;
 
             if (passed) passedCount++;
         }
 
-        // make sure all were passed
+        // if we got this far, make sure all tests were passed
         return (passedCount === ruleGroup.rules.length && !ruleGroup.any);
     }
 
-    private processRuleGroupAsync<T>(data: T, ruleGroup: RuleGroup<T>, options?: TestOptions): Observable<boolean> {
+    private processRuleGroupAsync<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): Observable<boolean> {
         return from(ruleGroup.rules)
             .pipe(
-                concatMap(ruleSet => this.processRuleSetAsync(data, ruleSet, options)),
+                concatMap(ruleSet => this.processRuleSetAsync(data, ruleSet, state)),
                 takeWhile(passed => !this.canShortCircuitRuleGroup(passed, ruleGroup))
             );
     }
 
-    private processRule<T>(data: T, rule: Rule<T>, options?: TestOptions): boolean {
-        const rootData = options ? options.rootData : null;
+    private processRule<T>(data: T, rule: Rule<T>, state?: TestRunState): boolean {
+        if (!this.doProcessRule(rule, state, false)) return true;
+
+        const rootData = state ? state.rootData : null;
         return rule.func(data, rootData);
     }
 
-    private processRuleAsync<T>(data: T, rule: Rule<T>, options?: TestOptions): Observable<boolean> {
-        if (!rule.asyncFunc) return of(true);
+    private processRuleAsync<T>(data: T, rule: Rule<T>, state?: TestRunState): Observable<boolean> {
+        if (!this.doProcessRule(rule, state, true)) return of(true);
 
-        const rootData = options ? options.rootData : null;
+        const rootData = state ? state.rootData : null;
         return rule.asyncFunc(data, rootData);
+    }
+
+    private doProcessRule<T>(rule: Rule<T>, state: TestRunState, isAsync: boolean): boolean {
+        // make sure we have the appropriate func to call
+        if ((isAsync && !rule.asyncFunc) || (!isAsync && !rule.func)) return false;
+        
+        // if there is missing data, then assume we should process the rule
+        if (!rule.options || !rule.options.controlStateOptions || !state || !state.controlState) return true;
+
+        if (rule.options.controlStateOptions.skipDisabled && state.controlState.disabled) return false;
+        if (rule.options.controlStateOptions.skipPristine && state.controlState.pristine) return false;
+        if (rule.options.controlStateOptions.skipUntouched && state.controlState.untouched) return false;
+
+        return true;
     }
 
     private canShortCircuitRuleGroup<T>(passed: boolean, ruleGroup: RuleGroup<T>) {

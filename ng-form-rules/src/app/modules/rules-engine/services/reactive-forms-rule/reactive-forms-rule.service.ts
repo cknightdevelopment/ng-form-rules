@@ -10,6 +10,11 @@ import { FormatWidth } from "@angular/common";
 import { TraceService } from "../../../utils/trace/trace.service";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
+import { TestResultsBase } from "../../../form-rules/models/test-results-base";
+import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
+import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";
+import { ReactiveFormsValidationErrorsData } from "../../../form-rules/models/reactive-forms-validation-errors-data";
+import { ControlState } from "../../../form-rules/models/control-state";
 // tslint:enable:max-line-length
 
 /**
@@ -123,17 +128,12 @@ export class ReactiveFormsRuleService {
             const controlContextValues = this.getControlContextValues(control, property);
 
             const testResults = this.rulesEngineSvc
-                .runTests(controlContextValues.relative, property.valid, { rootData: controlContextValues.root });
+                .runTests(controlContextValues.relative, property.valid, { 
+                    rootData: controlContextValues.root,
+                    controlState: ControlState.create(control)
+                });
 
-            // if valid, Angular reactive forms wants us to return null, otherwise return an object with the validation info
-            return testResults.passed
-                ? null
-                : {
-                    ngFormRules: {
-                        message: testResults.message,
-                        messages: testResults.messages
-                    }
-                };
+            return this.mapToReactiveFormsValidationErrors(testResults);
         };
     }
 
@@ -141,15 +141,12 @@ export class ReactiveFormsRuleService {
         return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
             const controlContextValues = this.getControlContextValues(control, property);
 
-            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, { rootData: controlContextValues.root })
-                .pipe(
-                    map(testResults => {
-                        // if valid, Angular reactive forms wants us to return null, otherwise return an object with the validation info
-                        return testResults.passed
-                            ? null
-                            : { ngFormRules: testResults };
-                    })
-                );
+            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, { 
+                rootData: controlContextValues.root,
+                controlState: ControlState.create(control)
+            }).pipe(
+                map(this.mapToReactiveFormsValidationErrors)
+            );
         };
     }
 
@@ -164,6 +161,19 @@ export class ReactiveFormsRuleService {
         return {
             root: rootValue,
             relative: relativeValue
+        };
+    }
+
+    private mapToReactiveFormsValidationErrors<T>(testResults: TestResultsBase<T>): ReactiveFormsValidationErrors {
+        // if passed, Angular reactive forms wants us to return null, otherwise return an object with the validation info
+        if (!testResults || testResults.passed) return null;
+
+        return {
+            ngFormRules: {
+                message: testResults.message,
+                failed: testResults.failedResults
+                    .map(x => ({ name: x.name, message: x.message } as ReactiveFormsFailedValdation))
+            } as ReactiveFormsValidationErrorsData
         };
     }
 

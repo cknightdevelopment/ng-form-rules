@@ -13,6 +13,11 @@
     <input name="pageCount" type="number" formControlName="pageCount" />
     <pre>{{ bookFormGroup.get('pageCount')?.errors | json }}</pre>
 
+    <label>Realtime</label>
+    <input name="realtime" type="number" formControlName="realtime" />
+    <pre>{{ bookFormGroup.get('realtime')?.errors | json }}</pre>
+
+    <pre>{{ bookFormGroup.status }}</pre>
     <button type="submit" [disabled]="!bookFormGroup.valid">Submit</button>
 </form>
 
