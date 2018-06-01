@@ -11,7 +11,7 @@
 ### Documentation
 
 ### Other
-- turn into a library via CLI
+- ~~turn into a library via CLI~~
 
 
 # Post MVP Ideas
