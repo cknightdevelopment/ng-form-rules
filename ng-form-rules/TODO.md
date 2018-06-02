@@ -1,7 +1,9 @@
 # MVP
 
 ### Functionality
-- edit
+- add `FormArray` to existing form
+- add `FormGroup` to existing form
+- ~~edit~~
 - view
 
 ### Testing

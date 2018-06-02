@@ -67,16 +67,26 @@ export class ReactiveFormsRuleService {
         });
     }
 
-    private setupValueChangeSubscriptions<T>(control: AbstractControl, property: PropertyBase<T>, arrayIndex?: number) {
-        const dependencyPropNames = this.rulesEngineSvc.getDependencyProperties(property.valid);
+    private setupValueChangeSubscriptions<T>(control: AbstractControl, property: PropertyBase<T>, arrayIndex?: number): AbstractControl {
         const propertyControl = PropertyBase.isArrayItemProperty(property)
             ? (control as FormArray).at(arrayIndex)
             : control.get((property as Property<T>).name);
 
         if (!propertyControl) return null;
 
+        this.setupEditabilitySubscriptions(propertyControl, control, property);
+        this.setupValidationDependencySubscriptions(propertyControl, control, property);
+
+        return propertyControl;
+    }
+
+    private setupValidationDependencySubscriptions<T>(
+        propertyControl: AbstractControl, parentControl: AbstractControl, property: PropertyBase<T>
+    ): void {
+        const dependencyPropNames = this.rulesEngineSvc.getDependencyProperties(property.valid);
+
         dependencyPropNames.forEach(d => {
-            const dependencyControl = this.findControlRelatively(control, d);
+            const dependencyControl = this.findControlRelatively(parentControl, d);
 
             if (!dependencyControl) return;
 
@@ -84,8 +94,43 @@ export class ReactiveFormsRuleService {
                 propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
             });
         });
+    }
 
-        return propertyControl;
+    private setupEditabilitySubscriptions<T>(
+        propertyControl: AbstractControl, parentControl: AbstractControl, property: PropertyBase<T>
+    ): void {
+        // setup control to perform edit tests on value change
+        propertyControl.valueChanges.subscribe(value => {
+            this.persistEditTests(propertyControl, property);
+        });
+
+        const dependencyPropNames = this.rulesEngineSvc.getDependencyProperties(property.edit);
+
+        dependencyPropNames.forEach(dpn => {
+            const dependencyControl = this.findControlRelatively(parentControl, dpn);
+
+            if (!dependencyControl) return;
+
+            // setup control to perform edit tests when dependency property changes
+            dependencyControl.valueChanges.subscribe(value => {
+                this.persistEditTests(propertyControl, property);
+            });
+        });
+    }
+
+    private persistEditTests<T>(propertyControl: AbstractControl, property: PropertyBase<T>) {
+        const controlContextValues = this.getControlContextValues(propertyControl, property);
+
+        const testResults = this.rulesEngineSvc
+            .runTests(controlContextValues.relative, property.edit, {
+                rootData: controlContextValues.root,
+                controlState: ControlState.create(propertyControl)
+            });
+
+        if (testResults.passed && propertyControl.disabled)
+            propertyControl.enable({emitEvent: false});
+        else if (!testResults.passed && propertyControl.enabled)
+            propertyControl.disable({emitEvent: false});
     }
 
     private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {

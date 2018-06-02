@@ -7,6 +7,7 @@
     "start": "ng serve",
     "build": "ng build ng-form-rules",
     "build:prod": "ng build ng-form-rules --prod",
+    "build:npm": "ng build ng-form-rules --prod",
     "test": "ng test ng-form-rules --browsers ChromeNoSandbox --source-map false",
     "test:once": "ng test ng-form-rules --watch=false --browsers ChromeNoSandbox --progress false --source-map false",
     "test:ci": "ng test ng-form-rules --watch=false --browsers ChromeNoSandbox --progress false --source-map false",
