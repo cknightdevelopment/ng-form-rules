@@ -1,10 +1,9 @@
 # MVP
 
 ### Functionality
-- add `FormArray` to existing form
-- add `FormGroup` to existing form
+- ~~add `FormArray` to existing form~~
 - ~~edit~~
-- view
+- update subscriptions on adding FormArray item
 
 ### Testing
 
@@ -20,3 +19,4 @@
 - control state options
   - skip pristine
   - skip untouched
+- view

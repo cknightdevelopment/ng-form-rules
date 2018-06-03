@@ -15,6 +15,7 @@ import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reacti
 import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";
 import { ReactiveFormsValidationErrorsData } from "../../../form-rules/models/reactive-forms-validation-errors-data";
 import { ControlState } from "../../../form-rules/models/control-state";
+import { CommonService } from "../../../utils/common/common.service";
 // tslint:enable:max-line-length
 
 /**
@@ -25,8 +26,33 @@ export class ReactiveFormsRuleService {
     constructor(
         private rulesEngineSvc: RulesEngineService,
         private formBuilder: FormBuilder,
-        private traceSvc: TraceService
+        private traceSvc: TraceService,
+        private commonSvc: CommonService
     ) {
+    }
+
+    addArrayItemPropertyControl<T>(
+        property: ArrayItemProperty<T>,
+        parentFormArray: FormArray,
+        initialValue?: any,
+        index?: number
+    ): void {
+        const control = this.buildAbstractControl(property, initialValue);
+        const isLastItem = !this.commonSvc.isZeroOrGreater(index) || index >= parentFormArray.length;
+
+        if (isLastItem)
+            parentFormArray.push(control);
+        else
+            parentFormArray.insert(index, control);
+
+        const postAddIndex = isLastItem ? parentFormArray.length - 1 : index;
+
+        this.setupSubscriptions(parentFormArray, [property], postAddIndex);
+
+        if (initialValue)
+            parentFormArray
+                .at(postAddIndex)
+                .patchValue(initialValue);
     }
 
     /**
@@ -49,19 +75,81 @@ export class ReactiveFormsRuleService {
         return formGroup;
     }
 
-    private setupSubscriptions<T>(control: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number) {
-        properties.forEach(p => {
-            const propertyControl = this.setupValueChangeSubscriptions(control, p, arrayIndex);
+    private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
+        let control: AbstractControl;
 
-            if (p.properties) {
-                this.setupSubscriptions(propertyControl, p.properties);
+        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, initialValue);
+        else if (property.properties) control = this.buildGroup(property.properties, initialValue);
+        else control = this.buildControl(property, initialValue);
+
+        control.setValidators(this.buildValidatorFunction(property));
+        control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
+
+        return control;
+    }
+
+    private buildControl<T>(property: PropertyBase<T>, initialValue?: any): FormControl {
+        return this.formBuilder.control(initialValue || null);
+    }
+
+    private buildGroup<T>(properties: Property<T>[], value?: any): FormGroup {
+        const formGroup = this.formBuilder.group({});
+
+        properties.forEach(p => {
+            const propertyValue = value ? value[p.name] : null;
+            const ctrl = this.buildAbstractControl(p, propertyValue);
+            formGroup.addControl(p.name, ctrl);
+        });
+
+        return formGroup;
+    }
+
+    private buildArray<T>(property: ArrayItemProperty<T>, initialValue?: any[]): FormArray {
+        initialValue = Array.isArray(initialValue) ? initialValue : [null];
+
+        return this.formBuilder.array(initialValue.map(v => this.buildAbstractControl(property, v)));
+    }
+
+    private buildValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): ValidatorFn {
+        return (control: AbstractControl): ValidationErrors => {
+            const controlContextValues = this.getControlContextValues(control, property);
+
+            const testResults = this.rulesEngineSvc
+                .runTests(controlContextValues.relative, property.valid, {
+                    rootData: controlContextValues.root,
+                    controlState: ControlState.create(control)
+                });
+
+            return this.mapToReactiveFormsValidationErrors(testResults);
+        };
+    }
+
+    private buildAsyncValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): AsyncValidatorFn {
+        return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
+            const controlContextValues = this.getControlContextValues(control, property);
+
+            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, {
+                rootData: controlContextValues.root,
+                controlState: ControlState.create(control)
+            }).pipe(
+                map(this.mapToReactiveFormsValidationErrors)
+            );
+        };
+    }
+
+    private setupSubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number) {
+        properties.forEach(property => {
+            const propertyControl = this.setupValueChangeSubscriptions(parentControl, property, arrayIndex);
+
+            if (property.properties) {
+                this.setupSubscriptions(propertyControl, property.properties);
             }
 
-            if (p.arrayItemProperty) {
+            if (property.arrayItemProperty) {
                 // if there is an arrayItemProperty we know that we are working with a FormArray control
                 const formArrayControl = (propertyControl as FormArray);
                 for (let i = 0; i < formArrayControl.length; i++) {
-                    this.setupSubscriptions(formArrayControl, [p.arrayItemProperty], i);
+                    this.setupSubscriptions(formArrayControl, [property.arrayItemProperty], i);
                 }
             }
         });
@@ -131,68 +219,6 @@ export class ReactiveFormsRuleService {
             propertyControl.enable({emitEvent: false});
         else if (!testResults.passed && propertyControl.enabled)
             propertyControl.disable({emitEvent: false});
-    }
-
-    private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
-        let control: AbstractControl;
-
-        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, initialValue);
-        else if (property.properties) control = this.buildGroup(property.properties, initialValue);
-        else control = this.buildControl(property, initialValue);
-
-        control.setValidators(this.buildValidatorFunction(property));
-        control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
-
-        return control;
-    }
-
-    private buildControl<T>(property: PropertyBase<T>, initialValue?: any): FormControl {
-        return this.formBuilder.control(initialValue || null);
-    }
-
-    private buildGroup<T>(properties: Property<T>[], value?: any): FormGroup {
-        const formGroup = this.formBuilder.group({});
-
-        properties.forEach(p => {
-            const propertyValue = value ? value[p.name] : null;
-            const ctrl = this.buildAbstractControl(p, propertyValue);
-            formGroup.addControl(p.name, ctrl);
-        });
-
-        return formGroup;
-    }
-
-    private buildArray<T>(property: ArrayItemProperty<T>, initialValue?: any[]): FormArray {
-        initialValue = Array.isArray(initialValue) ? initialValue : [null];
-
-        return this.formBuilder.array(initialValue.map(v => this.buildAbstractControl(property, v)));
-    }
-
-    private buildValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): ValidatorFn {
-        return (control: AbstractControl): ValidationErrors => {
-            const controlContextValues = this.getControlContextValues(control, property);
-
-            const testResults = this.rulesEngineSvc
-                .runTests(controlContextValues.relative, property.valid, {
-                    rootData: controlContextValues.root,
-                    controlState: ControlState.create(control)
-                });
-
-            return this.mapToReactiveFormsValidationErrors(testResults);
-        };
-    }
-
-    private buildAsyncValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): AsyncValidatorFn {
-        return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
-            const controlContextValues = this.getControlContextValues(control, property);
-
-            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, {
-                rootData: controlContextValues.root,
-                controlState: ControlState.create(control)
-            }).pipe(
-                map(this.mapToReactiveFormsValidationErrors)
-            );
-        };
     }
 
     private getControlContextValues<T>(control: AbstractControl, property: Property<T> | ArrayItemProperty<T>): ControlContextValues {

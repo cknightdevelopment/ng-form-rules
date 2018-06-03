@@ -1,6 +1,6 @@
 import { TestBed } from "@angular/core/testing";
 import { ReactiveFormsRuleService } from "./reactive-forms-rule.service";
-import { ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule, FormArray } from "@angular/forms";
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { MODEL_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/model-settings.token";
 import { Person } from "../../../test-utils/models/person";
@@ -20,7 +20,7 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
         return [
             this.builder.property<Person>("age"),
             this.builder.property<Person>("nicknames", p => {
-                p.arrayItemProperty = this.builder.arrayItemProperty(aip => {
+                p.arrayItemProperty = this.builder.arrayItemProperty<string>(aip => {
                     aip.valid = [
                         {
                             name: "Nickname items test",
@@ -93,6 +93,7 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
 
 describe('ReactiveFormsRuleService', () => {
     let svc: ReactiveFormsRuleService;
+    let engine: RulesEngineService;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -114,6 +115,7 @@ describe('ReactiveFormsRuleService', () => {
         });
 
         svc = TestBed.get(ReactiveFormsRuleService);
+        engine = TestBed.get(RulesEngineService);
     });
 
     it('should be created', () => {
@@ -260,6 +262,20 @@ describe('ReactiveFormsRuleService', () => {
                 fg.patchValue({ nicknames: ["Something else"] });
                 expect(nameControl.enabled).toBeFalsy();
             });
+        });
+    });
+
+    describe('push control', () => {
+        it('should ...', () => {
+            const fg = svc.createFormGroup('a', validPerson);
+            const nicknames = fg.get('nicknames') as FormArray;
+            const settings = engine.getModelSettings('a');
+            const aip = settings.properties.find(p => p.name == "nicknames").arrayItemProperty;
+
+            svc.addArrayItemPropertyControl(aip, nicknames, null, 1);
+
+            console.log(JSON.stringify(nicknames.value));
+            expect(nicknames.length).toEqual(3);
         });
     });
 });
