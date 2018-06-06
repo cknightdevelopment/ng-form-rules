@@ -17,6 +17,7 @@ import { of } from 'rxjs';
 import { ControlState } from '../../../form-rules/models/control-state';
 import { AbstractControl } from '@angular/forms';
 import { Car } from '../../../test-utils/models/car';
+import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -37,6 +38,7 @@ describe('RulesEngineService', () => {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
                         new PersonModelSettings("a"),
+                        new EmptyModelSettings("empty"),
                         // new ControlStateOptionsSettings("b")
                     ]
                 },
@@ -86,6 +88,12 @@ describe('RulesEngineService', () => {
             expect(personModelSettings.properties
                 .find(p => p.name == "nicknames").arrayItemProperty.absolutePath
             ).toEqual('nicknames.[]');
+        });
+
+        it('should handle falsey built property settings', () => {
+            const emptyModelSettings = svc.getModelSettings<Person>("empty");
+            expect(emptyModelSettings).toBeTruthy();
+            expect(emptyModelSettings.properties).toEqual([]);
         });
     });
 
@@ -385,6 +393,14 @@ describe('RulesEngineService', () => {
         });
     });
 
+    describe('miscellaneous', () => {
+        it('should handle null test results being sent to TestResultsBase', () => {
+            const results = new TestResultsBase(null);
+            expect(results.passed).toBeTruthy();
+            expect(results.results).toEqual([]);
+        });
+    });
+
     // describe('control state options', () => {
     //     it('should skip validations for pristine controls when control state options dictate', () => {
     //         const ruleGroup = controlStateOptionsSettings.properties
@@ -486,6 +502,12 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                 p.arrayItemProperty = this.builder.arrayItemProperty<string>();
             })
         ];
+    }
+}
+
+class EmptyModelSettings extends AbstractModelSettings<Person> {
+    protected buildPropertyRules(): Property<Person>[] {
+        return null;
     }
 }
 

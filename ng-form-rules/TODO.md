@@ -10,8 +10,8 @@
 ### Testing
 
 ### Dev Ops
-- generate code coverage report
-- add code coverage metrics to GitHub page
+- ~~generate code coverage report~~
+- ~~add code coverage metrics to GitHub page~~
 
 ### Documentation
 
