@@ -1,6 +1,6 @@
-import { TestBed } from "@angular/core/testing";
+import { TestBed, ComponentFixture } from "@angular/core/testing";
 import { ReactiveFormsRuleService } from "./reactive-forms-rule.service";
-import { ReactiveFormsModule, FormArray } from "@angular/forms";
+import { ReactiveFormsModule, FormArray, FormGroup } from "@angular/forms";
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { MODEL_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/model-settings.token";
 import { Person } from "../../../test-utils/models/person";
@@ -11,26 +11,22 @@ import { TRACE_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/trace
 import { Car } from "../../../test-utils/models/car";
 import { UtilsModule } from "../../../utils/utils.module";
 import { of } from "rxjs";
+import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
+import { Component, OnInit } from "@angular/core";
+import { ValueTransformer } from "@angular/compiler/src/util";
 
 const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: "Subaru" }, nicknames: ["C-TOWN", "C"] };
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };
+const validSettingsKey = 'validSettings';
+const editSettingsKey = 'editSettings';
 
-export class PersonModelSettings extends AbstractModelSettings<Person> {
+class PersonModelValidSettings extends AbstractModelSettings<Person> {
     buildPropertyRules(): Property<Person>[] {
         return [
             this.builder.property<Person>("age"),
             this.builder.property<Person>("nicknames", p => {
                 p.arrayItemProperty = this.builder.arrayItemProperty<string>(aip => {
                     aip.valid = [
-                        {
-                            name: "Nickname items test",
-                            check: {
-                                func: (x, root) => root.age == 100,
-                                options: { dependencyProperties: ["/age"] }
-                            }
-                        }
-                    ];
-                    aip.edit = [
                         {
                             name: "Nickname items test",
                             check: {
@@ -54,6 +50,45 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
                                 }
                             }
                         ];
+                    })
+                ];
+            }),
+            this.builder.property<Person>("name", p => {
+                p.valid = [
+                    {
+                        check: {
+                            func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                            asyncFunc: (x, root) => of(root.age == 100),
+                            options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
+                        }
+                    }
+                ];
+            })
+        ];
+    }
+}
+
+class PersonModelEditSettings extends AbstractModelSettings<Person> {
+    buildPropertyRules(): Property<Person>[] {
+        return [
+            this.builder.property<Person>("age"),
+            this.builder.property<Person>("nicknames", p => {
+                p.arrayItemProperty = this.builder.arrayItemProperty<string>(aip => {
+                    aip.edit = [
+                        {
+                            name: "Nickname items test",
+                            check: {
+                                func: (x, root) => root.age == 100,
+                                options: { dependencyProperties: ["/age"] }
+                            }
+                        }
+                    ];
+                });
+            }),
+            this.builder.property<Person>("car", p => {
+                p.properties = [
+                    this.builder.property<Car>("make"),
+                    this.builder.property<Car>("year", cp => {
                         cp.edit = [
                             {
                                 name: "Year test",
@@ -67,21 +102,11 @@ export class PersonModelSettings extends AbstractModelSettings<Person> {
                 ];
             }),
             this.builder.property<Person>("name", p => {
-                p.valid = [
-                    {
-                        name: "Name test",
-                        check: {
-                            func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
-                            asyncFunc: (x, root) => of(root.age == 100),
-                            options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
-                        }
-                    }
-                ];
                 p.edit = [
                     {
                         name: "Name test",
                         check: {
-                            func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                            func: x =>  x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
                             options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
                         }
                     }
@@ -107,7 +132,8 @@ describe('ReactiveFormsRuleService', () => {
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
-                        new PersonModelSettings("a")
+                        new PersonModelValidSettings(validSettingsKey),
+                        new PersonModelEditSettings(editSettingsKey)
                     ]
                 },
                 { provide: TRACE_SETTINGS_TOKEN, useValue: true }
@@ -124,7 +150,7 @@ describe('ReactiveFormsRuleService', () => {
 
     describe('create form group', () => {
         it('should create form group according to model settings', () => {
-            const fg = svc.createFormGroup('a');
+            const fg = svc.createFormGroup(validSettingsKey);
             const value = fg.getRawValue();
             expect(value).toEqual({
                 age: null,
@@ -142,27 +168,28 @@ describe('ReactiveFormsRuleService', () => {
         });
 
         it('should create form group with initial values', () => {
-            const fg = svc.createFormGroup('a', validPerson);
+            const fg = svc.createFormGroup(validSettingsKey, validPerson);
             const value = fg.getRawValue();
             expect(value).toEqual(validPerson);
         });
 
         it('should create form group as valid when given valid values', () => {
-            const fg = svc.createFormGroup('a', validPerson);
+            const fg = svc.createFormGroup(validSettingsKey, validPerson);
             expect(fg.valid).toBeTruthy();
         });
 
         it('should create form group as invalid when given invalid values', () => {
-            const fg = svc.createFormGroup('a', invalidPerson);
+            const fg = svc.createFormGroup(validSettingsKey, invalidPerson);
             expect(fg.valid).toBeFalsy();
         });
 
         describe('async', () => {
             it('should create form group as invalid when given invalid values', () => {
-                const fg = svc.createFormGroup('a', Object.assign({}, validPerson, { age: 200 }));
+                const fg = svc.createFormGroup(validSettingsKey, Object.assign({}, validPerson, { age: 200 }));
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeFalsy();
+                expect(nameControl.errors).toBeTruthy();
             });
         });
     });
@@ -170,48 +197,53 @@ describe('ReactiveFormsRuleService', () => {
     describe('valid', () => {
         describe('dependency property reactions', () => {
             it('should react to same level property change', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
-                fg.patchValue({age: -30});
+                fg.patchValue({ age: -30 });
                 expect(nameControl.valid).toBeFalsy();
+                expect(nameControl.errors).toBeTruthy();
             });
 
             it('should react to parent property change (non-array item)', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
                 const yearControl = fg.get('car.year');
 
                 expect(yearControl.valid).toBeTruthy();
                 fg.patchValue({ name: "Cindy" });
                 expect(yearControl.valid).toBeFalsy();
+                expect(yearControl.errors).toBeTruthy();
             });
 
             it('should react to parent property change (array item)', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
                 const firstNicknameControl = fg.get('nicknames.0');
 
                 expect(firstNicknameControl.valid).toBeTruthy();
                 fg.patchValue({ age: 101 });
                 expect(firstNicknameControl.valid).toBeFalsy();
+                expect(firstNicknameControl.errors).toBeTruthy();
             });
 
             it('should react to child property change', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
                 fg.patchValue({ car: { make: "Ford" } });
                 expect(nameControl.valid).toBeFalsy();
+                expect(nameControl.errors).toBeTruthy();
             });
 
             it('should react to array item change', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
                 fg.patchValue({ nicknames: ["Something else"] });
                 expect(nameControl.valid).toBeFalsy();
+                expect(nameControl.errors).toBeTruthy();
             });
         });
     });
@@ -219,16 +251,16 @@ describe('ReactiveFormsRuleService', () => {
     describe('edit', () => {
         describe('dependency property reactions', () => {
             it('should react to same level property change', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(editSettingsKey, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
-                fg.patchValue({age: -30});
+                fg.patchValue({ age: -30 });
                 expect(nameControl.enabled).toBeFalsy();
             });
 
             it('should react to parent property change (non-array item)', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(editSettingsKey, validPerson);
                 const yearControl = fg.get('car.year');
 
                 expect(yearControl.enabled).toBeTruthy();
@@ -237,7 +269,7 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to parent property change (array item)', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(editSettingsKey, validPerson);
                 const firstNicknameControl = fg.get('nicknames.0');
 
                 expect(firstNicknameControl.enabled).toBeTruthy();
@@ -246,7 +278,7 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to child property change', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(editSettingsKey, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
@@ -255,7 +287,7 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to array item change', () => {
-                const fg = svc.createFormGroup('a', validPerson);
+                const fg = svc.createFormGroup(editSettingsKey, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
@@ -265,17 +297,48 @@ describe('ReactiveFormsRuleService', () => {
         });
     });
 
-    describe('push control', () => {
-        it('should ...', () => {
-            const fg = svc.createFormGroup('a', validPerson);
-            const nicknames = fg.get('nicknames') as FormArray;
-            const settings = engine.getModelSettings('a');
-            const aip = settings.properties.find(p => p.name == "nicknames").arrayItemProperty;
+    describe('addArrayItemPropertyControl', () => {
+        let nicknamesFormArray: FormArray;
+        let nicknameArrayItemProperty: ArrayItemProperty<string>;
+        const newNicknameValue = 'New Nickname';
 
-            svc.addArrayItemPropertyControl(aip, nicknames, null, 1);
+        beforeEach(() => {
+            const fg = svc.createFormGroup(validSettingsKey, validPerson);
+            const settings = engine.getModelSettings(validSettingsKey);
+            nicknamesFormArray = fg.get('nicknames') as FormArray;
+            nicknameArrayItemProperty = settings.properties
+                .find(p => p.name == "nicknames")
+                .arrayItemProperty;
+        });
 
-            console.log(JSON.stringify(nicknames.value));
-            expect(nicknames.length).toEqual(3);
+        it('should push null to the end', () => {
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray);
+            expect(nicknamesFormArray.length).toEqual(3);
+            expect(nicknamesFormArray.at(2).value).toEqual(null);
+        });
+
+        it('should push initial value to the end', () => {
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue);
+            expect(nicknamesFormArray.length).toEqual(3);
+            expect(nicknamesFormArray.at(2).value).toEqual(newNicknameValue);
+        });
+
+        it('should push to array index item one', () => {
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, 1);
+            expect(nicknamesFormArray.length).toEqual(3);
+            expect(nicknamesFormArray.at(1).value).toEqual(newNicknameValue);
+        });
+
+        it('should push to end of array when given positive out of bound array index', () => {
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, 99);
+            expect(nicknamesFormArray.length).toEqual(3);
+            expect(nicknamesFormArray.at(2).value).toEqual(newNicknameValue);
+        });
+
+        it('should push to end of array when given negative out of bound array index', () => {
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, -99);
+            expect(nicknamesFormArray.length).toEqual(3);
+            expect(nicknamesFormArray.at(2).value).toEqual(newNicknameValue);
         });
     });
 });

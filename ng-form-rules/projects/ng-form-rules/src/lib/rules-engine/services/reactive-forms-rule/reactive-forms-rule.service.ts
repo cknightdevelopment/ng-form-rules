@@ -38,14 +38,14 @@ export class ReactiveFormsRuleService {
         index?: number
     ): void {
         const control = this.buildAbstractControl(property, initialValue);
-        const isLastItem = !this.commonSvc.isZeroOrGreater(index) || index >= parentFormArray.length;
+        const willBeLastItem = !this.commonSvc.isZeroOrGreater(index) || index >= parentFormArray.length;
 
-        if (isLastItem)
+        if (willBeLastItem)
             parentFormArray.push(control);
         else
             parentFormArray.insert(index, control);
 
-        const postAddIndex = isLastItem ? parentFormArray.length - 1 : index;
+        const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : index;
 
         this.setupSubscriptions(parentFormArray, [property], postAddIndex);
 
@@ -137,7 +137,7 @@ export class ReactiveFormsRuleService {
         };
     }
 
-    private setupSubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number) {
+    private setupSubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number): void {
         properties.forEach(property => {
             const propertyControl = this.setupValueChangeSubscriptions(parentControl, property, arrayIndex);
 
@@ -206,7 +206,7 @@ export class ReactiveFormsRuleService {
         });
     }
 
-    private persistEditTests<T>(propertyControl: AbstractControl, property: PropertyBase<T>) {
+    private persistEditTests<T>(propertyControl: AbstractControl, property: PropertyBase<T>): void {
         const controlContextValues = this.getControlContextValues(propertyControl, property);
 
         const testResults = this.rulesEngineSvc
@@ -265,7 +265,7 @@ export class ReactiveFormsRuleService {
     private buildControlRelativePathArray(relativePath: string): string[] {
         const result: string[] = [];
 
-        // takes care of './'. '../', and '/'
+        // takes care of './', '../', and '/'
         const slashSeparated = relativePath.split("/");
 
         slashSeparated.forEach(slashItem => {

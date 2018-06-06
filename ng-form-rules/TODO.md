@@ -4,10 +4,14 @@
 - ~~add `FormArray` to existing form~~
 - ~~edit~~
 - update subscriptions on adding FormArray item
+- add more tracing
+- ~~add tracing setting~~
 
 ### Testing
 
 ### Dev Ops
+- generate code coverage report
+- add code coverage metrics to GitHub page
 
 ### Documentation
 
