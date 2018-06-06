@@ -155,15 +155,19 @@ export class ReactiveFormsRuleService {
         });
     }
 
-    private setupValueChangeSubscriptions<T>(control: AbstractControl, property: PropertyBase<T>, arrayIndex?: number): AbstractControl {
+    private setupValueChangeSubscriptions<T>(
+        parentControl: AbstractControl,
+        property: PropertyBase<T>,
+        arrayIndex?: number
+    ): AbstractControl {
         const propertyControl = PropertyBase.isArrayItemProperty(property)
-            ? (control as FormArray).at(arrayIndex)
-            : control.get((property as Property<T>).name);
+            ? (parentControl as FormArray).at(arrayIndex)
+            : parentControl.get((property as Property<T>).name);
 
         if (!propertyControl) return null;
 
-        this.setupEditabilitySubscriptions(propertyControl, control, property);
-        this.setupValidationDependencySubscriptions(propertyControl, control, property);
+        this.setupEditabilitySubscriptions(propertyControl, parentControl, property);
+        this.setupValidationDependencySubscriptions(propertyControl, parentControl, property);
 
         return propertyControl;
     }

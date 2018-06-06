@@ -14,6 +14,7 @@ import { Observable, from , forkJoin, of } from 'rxjs';
 import { takeWhile, concatMap, filter, map, flatMap } from 'rxjs/operators';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { PropertyTestResults } from '../../../form-rules/models/property-test-result';
+import { PropertyBase } from '../../../form-rules/models/property-base';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -32,6 +33,7 @@ export class RulesEngineService {
 
         settings.forEach(x => {
             this.traceSvc.trace(`Registering model settings "${x.name}"`);
+            this.setPropertyAbsolutePaths(x.properties);
             this.modelSettings[x.name] = x;
         });
     }
@@ -291,4 +293,25 @@ export class RulesEngineService {
 
         return this.commonSvc.unique(result);
     }
+
+    private setPropertyAbsolutePaths(properties: PropertyBase<any>[], currentAbsolutePath: string = '') {
+        if (!properties) return;
+
+        properties.forEach(prop => {
+            const isArrayItemProperty = PropertyBase.isArrayItemProperty(prop);
+            const newAbsolutePathSegment = isArrayItemProperty ? '[]' : (prop as Property<any>).name;
+            const isAtRoot = !currentAbsolutePath;
+            const newAbsolutePath = `${currentAbsolutePath}${isAtRoot ? '' : '.'}${newAbsolutePathSegment}`;
+
+            // set absolute path for property
+            prop.setAbsolutePath(newAbsolutePath);
+
+            if (prop.properties) {
+                this.setPropertyAbsolutePaths(prop.properties, newAbsolutePath);
+            } else if (prop.arrayItemProperty) {
+                this.setPropertyAbsolutePaths([prop.arrayItemProperty], newAbsolutePath);
+            }
+        });
+    }
+
 }

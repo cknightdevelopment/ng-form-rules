@@ -16,6 +16,7 @@ import { UtilsModule } from '../../../utils/utils.module';
 import { of } from 'rxjs';
 import { ControlState } from '../../../form-rules/models/control-state';
 import { AbstractControl } from '@angular/forms';
+import { Car } from '../../../test-utils/models/car';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -63,8 +64,28 @@ describe('RulesEngineService', () => {
         });
 
         it('should set properties configured in model settings', () => {
-            expect(personModelSettings.properties.length).toEqual(2);
-            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age"]);
+            expect(personModelSettings.properties.length).toEqual(4);
+            expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age", "car", "nicknames"]);
+        });
+
+        it('should set absolute paths for properties configured in model settings', () => {
+            expect(personModelSettings.properties.find(p => p.name == "name").absolutePath).toEqual('name');
+            expect(personModelSettings.properties.find(p => p.name == "age").absolutePath).toEqual('age');
+
+            expect(personModelSettings.properties.find(p => p.name == "car").absolutePath).toEqual('car');
+            expect(personModelSettings.properties
+                .find(p => p.name == "car").properties
+                .find(p => p.name == 'make').absolutePath
+            ).toEqual('car.make');
+            expect(personModelSettings.properties
+                .find(p => p.name == "car").properties
+                .find(p => p.name == 'year').absolutePath
+            ).toEqual('car.year');
+
+            expect(personModelSettings.properties.find(p => p.name == "nicknames").absolutePath).toEqual('nicknames');
+            expect(personModelSettings.properties
+                .find(p => p.name == "nicknames").arrayItemProperty.absolutePath
+            ).toEqual('nicknames.[]');
         });
     });
 
@@ -454,6 +475,15 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         }
                     }
                 ];
+            }),
+            this.builder.property('car', p => {
+                p.properties = [
+                    this.builder.property<Car>('make'),
+                    this.builder.property<Car>('year'),
+                ];
+            }),
+            this.builder.property('nicknames', p => {
+                p.arrayItemProperty = this.builder.arrayItemProperty<string>();
             })
         ];
     }
