@@ -24,5 +24,4 @@ script:
   - xvfb-run -a npm run test:ci
 
 after_script:
-  - cd ..
-  - cat ./coverage/*/lcov.info | ./ng-form-rules/node_modules/coveralls/bin/coveralls.js
+  - cat ./coverage/*/lcov.info | ./node_modules/coveralls/bin/coveralls.js
