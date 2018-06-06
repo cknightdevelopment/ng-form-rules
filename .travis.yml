@@ -22,3 +22,7 @@ script:
   - cd ng-form-rules
   - npm install
   - xvfb-run -a npm run test:ci
+
+after_script:
+  - cd ..
+  - cat ./coverage/*/lcov.info | ./ng-form-rules/node_modules/coveralls/bin/coveralls.js

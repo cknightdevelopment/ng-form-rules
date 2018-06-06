@@ -8,3 +8,4 @@ ng-form-rules/**/dist/
 ng-form-rules/package-lock.json
 **/npm-debug.log*
 **/*.orig
+ng-form-rules/coverage
