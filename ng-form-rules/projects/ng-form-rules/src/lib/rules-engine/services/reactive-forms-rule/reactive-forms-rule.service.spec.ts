@@ -294,6 +294,15 @@ describe('ReactiveFormsRuleService', () => {
                 fg.patchValue({ nicknames: ["Something else"] });
                 expect(nameControl.enabled).toBeFalsy();
             });
+
+            it('should re-enabled a disabled control when tests pass', () => {
+                const fg = svc.createFormGroup(editSettingsKey, invalidPerson);
+                const nameControl = fg.get('name');
+
+                expect(nameControl.enabled).toBeFalsy();
+                fg.patchValue(validPerson);
+                expect(nameControl.enabled).toBeTruthy();
+            });
         });
     });
 
