@@ -56,6 +56,7 @@ class PersonModelValidSettings extends AbstractModelSettings<Person> {
             this.builder.property<Person>("name", p => {
                 p.valid = [
                     {
+                        message: "Name messsage",
                         check: {
                             func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
                             asyncFunc: (x, root) => of(root.age == 100),
@@ -307,13 +308,15 @@ describe('ReactiveFormsRuleService', () => {
     });
 
     describe('addArrayItemPropertyControl', () => {
+        let fg: FormGroup;
+        let settings: AbstractModelSettings<Person>;
         let nicknamesFormArray: FormArray;
         let nicknameArrayItemProperty: ArrayItemProperty<string>;
         const newNicknameValue = 'New Nickname';
 
         beforeEach(() => {
-            const fg = svc.createFormGroup(validSettingsKey, validPerson);
-            const settings = engine.getModelSettings(validSettingsKey);
+            fg = svc.createFormGroup(validSettingsKey, validPerson);
+            settings = engine.getModelSettings(validSettingsKey);
             nicknamesFormArray = fg.get('nicknames') as FormArray;
             nicknameArrayItemProperty = settings.properties
                 .find(p => p.name == "nicknames")
@@ -348,6 +351,16 @@ describe('ReactiveFormsRuleService', () => {
             svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, -99);
             expect(nicknamesFormArray.length).toEqual(3);
             expect(nicknamesFormArray.at(2).value).toEqual(newNicknameValue);
+        });
+
+        it('should unsubscribe and re-subscribe dependency properties', () => {
+            const nameControl = fg.get('name');
+            expect(nameControl.valid).toBeTruthy();
+
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, "Invalid Nickname", 0);
+
+            expect(nameControl.valid).toBeFalsy();
+            expect(nameControl.errors).toBeTruthy();
         });
     });
 });

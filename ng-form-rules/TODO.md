@@ -3,9 +3,10 @@
 ### Functionality
 - ~~add `FormArray` to existing form~~
 - ~~edit~~
-- update subscriptions on adding FormArray item
+- ~~update subscriptions on adding FormArray item~~
 - add more tracing
 - ~~add tracing setting~~
+- async edit
 
 ### Testing
 

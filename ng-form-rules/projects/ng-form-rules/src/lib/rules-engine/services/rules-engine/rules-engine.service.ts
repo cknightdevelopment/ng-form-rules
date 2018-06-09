@@ -31,10 +31,11 @@ export class RulesEngineService {
     ) {
         this.modelSettings = {};
 
-        settings.forEach(x => {
-            this.traceSvc.trace(`Registering model settings "${x.name}"`);
-            this.setPropertyAbsolutePaths(x.properties);
-            this.modelSettings[x.name] = x;
+        settings.forEach(setting => {
+            this.traceSvc.trace(`Registering model settings "${setting.name}"`);
+            this.setPropertyAbsolutePaths(setting.properties);
+            this.setPropertyOwnerModelSettingsName(setting.name, setting.properties);
+            this.modelSettings[setting.name] = setting;
         });
     }
 
@@ -314,4 +315,17 @@ export class RulesEngineService {
         });
     }
 
+    private setPropertyOwnerModelSettingsName(modelSettingsName: string, properties: PropertyBase<any>[]) {
+        if (!properties) return;
+
+        properties.forEach(prop => {
+            prop.setOwnerModelSettingsName(modelSettingsName);
+
+            if (prop.properties) {
+                this.setPropertyOwnerModelSettingsName(modelSettingsName, prop.properties);
+            } else if (prop.arrayItemProperty) {
+                this.setPropertyOwnerModelSettingsName(modelSettingsName, [prop.arrayItemProperty]);
+            }
+        });
+    }
 }

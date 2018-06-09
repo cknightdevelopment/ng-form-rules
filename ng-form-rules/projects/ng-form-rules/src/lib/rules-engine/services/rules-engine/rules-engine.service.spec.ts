@@ -95,6 +95,12 @@ describe('RulesEngineService', () => {
             expect(emptyModelSettings).toBeTruthy();
             expect(emptyModelSettings.properties).toEqual([]);
         });
+
+        it('should set owner model settings name of every property', () => {
+            const propertyWithOwnerSetCount = personModelSettings.properties
+                .filter(p => p.ownerModelSettingsName == "a").length;
+            expect(personModelSettings.properties.length).toEqual(propertyWithOwnerSetCount);
+        });
     });
 
     describe('rule set processing', () => {
@@ -390,6 +396,27 @@ describe('RulesEngineService', () => {
             expect(result[0]).toEqual("a");
             expect(result[1]).toEqual("b");
             expect(result[2]).toEqual("c");
+        });
+
+        it('should get unique dependency properties from multiple tests', () => {
+            const tests = [
+                {
+                    check: {
+                        func: () => true,
+                        options: { dependencyProperties: ["a", "b", "c"] }
+                    }
+                } as Test<Person>,
+                {
+                    check: {
+                        func: () => true,
+                        options: { dependencyProperties: ["b", "c", "d"] }
+                    }
+                } as Test<Person>
+            ];
+            const result = svc.getDependencyProperties(tests);
+
+            expect(result.length).toEqual(4);
+            expect(result).toEqual(["a", "b", "c", "d"]);
         });
     });
 

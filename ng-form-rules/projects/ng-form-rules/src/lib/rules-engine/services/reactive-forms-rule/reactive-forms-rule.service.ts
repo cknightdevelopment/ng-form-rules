@@ -31,6 +31,33 @@ export class ReactiveFormsRuleService {
     ) {
     }
 
+    /**
+     * Creates a form group using an instance of model settings
+     * @param modelSettingName Name of the model setting to use
+     * @param initialValue Initial data to set the form values to
+     * @returns Form group created according to defined model settings
+     */
+    createFormGroup(
+        modelSettingName: string,
+        initialValue?: any
+    ): FormGroup {
+        const settings = this.rulesEngineSvc.getModelSettings(modelSettingName);
+        if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
+
+        const formGroup = this.buildGroup(settings.properties, initialValue);
+        this.setupDependencySubscriptions(formGroup, settings.properties);
+        if (initialValue) formGroup.patchValue(initialValue);
+
+        return formGroup;
+    }
+
+    /**
+     * Adds an array item property to an existing form array
+     * @param property ArrayItemProperty to for the array item to be added
+     * @param parentFormArray The parent FormArray
+     * @param initialValue Initial value of the form array item
+     * @param index Index of where in the array to add the new item
+     */
     addArrayItemPropertyControl<T>(
         property: ArrayItemProperty<T>,
         parentFormArray: FormArray,
@@ -47,32 +74,13 @@ export class ReactiveFormsRuleService {
 
         const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : index;
 
-        this.setupSubscriptions(parentFormArray, [property], postAddIndex);
+        const modelSettings = this.rulesEngineSvc.getModelSettings(property.ownerModelSettingsName);
+        this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties, postAddIndex);
 
         if (initialValue)
             parentFormArray
                 .at(postAddIndex)
                 .patchValue(initialValue);
-    }
-
-    /**
-     * Creates a form group using an instance of model settings
-     * @param modelSettingName Name of the model setting to use
-     * @param initialValue Initial data to set the form values to
-     * @returns Form group created according to defined model settings
-     */
-    createFormGroup(
-        modelSettingName: string,
-        initialValue?: any
-    ): FormGroup {
-        const settings = this.rulesEngineSvc.getModelSettings(modelSettingName);
-        if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
-
-        const formGroup = this.buildGroup(settings.properties, initialValue);
-        this.setupSubscriptions(formGroup, settings.properties);
-        if (initialValue) formGroup.patchValue(initialValue);
-
-        return formGroup;
     }
 
     private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
@@ -82,8 +90,14 @@ export class ReactiveFormsRuleService {
         else if (property.properties) control = this.buildGroup(property.properties, initialValue);
         else control = this.buildControl(property, initialValue);
 
+        // setup validation tests on value change
         control.setValidators(this.buildValidatorFunction(property));
         control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
+
+        // setup edit tests on value change
+        control.valueChanges.subscribe(value => {
+            this.persistEditTests(control, property);
+        });
 
         return control;
     }
@@ -137,39 +151,33 @@ export class ReactiveFormsRuleService {
         };
     }
 
-    private setupSubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number): void {
+    private setupDependencySubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number): void {
         properties.forEach(property => {
-            const propertyControl = this.setupValueChangeSubscriptions(parentControl, property, arrayIndex);
+            // remove any existing dependency property subscriptions
+            if (property.dependencyPropertySubscriptions.length
+                && (!this.commonSvc.isZeroOrGreater(arrayIndex) || arrayIndex === 0)
+            ) {
+                property.dependencyPropertySubscriptions.forEach(dps$ => dps$.unsubscribe());
+            }
+
+            const propertyControl = this.getPropertyFromParent(parentControl, property, arrayIndex);
+            if (!propertyControl) return;
+
+            this.setupEditabilityDependencySubscriptions(propertyControl, parentControl, property);
+            this.setupValidationDependencySubscriptions(propertyControl, parentControl, property);
 
             if (property.properties) {
-                this.setupSubscriptions(propertyControl, property.properties);
+                this.setupDependencySubscriptions(propertyControl, property.properties);
             }
 
             if (property.arrayItemProperty) {
                 // if there is an arrayItemProperty we know that we are working with a FormArray control
                 const formArrayControl = (propertyControl as FormArray);
                 for (let i = 0; i < formArrayControl.length; i++) {
-                    this.setupSubscriptions(formArrayControl, [property.arrayItemProperty], i);
+                    this.setupDependencySubscriptions(formArrayControl, [property.arrayItemProperty], i);
                 }
             }
         });
-    }
-
-    private setupValueChangeSubscriptions<T>(
-        parentControl: AbstractControl,
-        property: PropertyBase<T>,
-        arrayIndex?: number
-    ): AbstractControl {
-        const propertyControl = PropertyBase.isArrayItemProperty(property)
-            ? (parentControl as FormArray).at(arrayIndex)
-            : parentControl.get((property as Property<T>).name);
-
-        if (!propertyControl) return null;
-
-        this.setupEditabilitySubscriptions(propertyControl, parentControl, property);
-        this.setupValidationDependencySubscriptions(propertyControl, parentControl, property);
-
-        return propertyControl;
     }
 
     private setupValidationDependencySubscriptions<T>(
@@ -182,20 +190,19 @@ export class ReactiveFormsRuleService {
 
             if (!dependencyControl) return;
 
-            dependencyControl.valueChanges.subscribe(value => {
+            const sub$ = dependencyControl.valueChanges.subscribe(value => {
                 propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
             });
+
+            property.addDependencyPropertySubscription(sub$);
         });
     }
 
-    private setupEditabilitySubscriptions<T>(
-        propertyControl: AbstractControl, parentControl: AbstractControl, property: PropertyBase<T>
+    private setupEditabilityDependencySubscriptions<T>(
+        propertyControl: AbstractControl,
+        parentControl: AbstractControl,
+        property: PropertyBase<T>
     ): void {
-        // setup control to perform edit tests on value change
-        propertyControl.valueChanges.subscribe(value => {
-            this.persistEditTests(propertyControl, property);
-        });
-
         const dependencyPropNames = this.rulesEngineSvc.getDependencyProperties(property.edit);
 
         dependencyPropNames.forEach(dpn => {
@@ -204,9 +211,11 @@ export class ReactiveFormsRuleService {
             if (!dependencyControl) return;
 
             // setup control to perform edit tests when dependency property changes
-            dependencyControl.valueChanges.subscribe(value => {
+            const sub$ = dependencyControl.valueChanges.subscribe(value => {
                 this.persistEditTests(propertyControl, property);
             });
+
+            property.addDependencyPropertySubscription(sub$);
         });
     }
 
@@ -237,6 +246,16 @@ export class ReactiveFormsRuleService {
             root: rootValue,
             relative: relativeValue
         };
+    }
+
+    private getPropertyFromParent<T>(
+        parentControl: AbstractControl,
+        property: PropertyBase<T>,
+        arrayIndex?: number
+    ) {
+        return PropertyBase.isArrayItemProperty(property)
+            ? (parentControl as FormArray).at(arrayIndex)
+            : parentControl.get((property as Property<T>).name);
     }
 
     private mapToReactiveFormsValidationErrors<T>(testResults: TestResultsBase<T>): ReactiveFormsValidationErrors {
