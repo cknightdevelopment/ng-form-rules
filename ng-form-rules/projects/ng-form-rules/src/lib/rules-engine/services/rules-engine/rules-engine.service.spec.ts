@@ -25,6 +25,7 @@ const invalidPerson: Person = { name: "Tom", age: 999 };
 describe('RulesEngineService', () => {
     let svc: RulesEngineService;
     let personModelSettings: AbstractModelSettings<Person>;
+    let anyModelSettings: AbstractModelSettings<Person>;
     // let controlStateOptionsSettings: AbstractModelSettings<ControlStateOptionsSettings>;
 
     beforeEach(() => {
@@ -37,8 +38,11 @@ describe('RulesEngineService', () => {
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
-                        new PersonModelSettings("a"),
+                        new PersonModelSettings("person"),
+                        new AnyModelSettings("any"),
+                        new NullModelSettings("null"),
                         new EmptyModelSettings("empty"),
+                        { name: "rogue"},
                         // new ControlStateOptionsSettings("b")
                     ]
                 },
@@ -47,7 +51,8 @@ describe('RulesEngineService', () => {
         });
 
         svc = TestBed.get(RulesEngineService);
-        personModelSettings = svc.getModelSettings<Person>("a");
+        personModelSettings = svc.getModelSettings<Person>("person");
+        anyModelSettings = svc.getModelSettings<Person>("any");
         // controlStateOptionsSettings = svc.getModelSettings<Person>("b");
     });
 
@@ -90,16 +95,28 @@ describe('RulesEngineService', () => {
             ).toEqual('nicknames.[]');
         });
 
-        it('should handle falsey built property settings', () => {
+        it('should set owner model settings name of every property', () => {
+            const propertyWithOwnerSetCount = personModelSettings.properties
+                .filter(p => p.ownerModelSettingsName == "person").length;
+            expect(personModelSettings.properties.length).toEqual(propertyWithOwnerSetCount);
+        });
+
+        it('should handle property settings with properties set to null', () => {
+            const emptyModelSettings = svc.getModelSettings<Person>("null");
+            expect(emptyModelSettings).toBeTruthy();
+            expect(emptyModelSettings.properties).toEqual([]);
+        });
+
+        it('should handle property settings with properties set to an empty array', () => {
             const emptyModelSettings = svc.getModelSettings<Person>("empty");
             expect(emptyModelSettings).toBeTruthy();
             expect(emptyModelSettings.properties).toEqual([]);
         });
 
-        it('should set owner model settings name of every property', () => {
-            const propertyWithOwnerSetCount = personModelSettings.properties
-                .filter(p => p.ownerModelSettingsName == "a").length;
-            expect(personModelSettings.properties.length).toEqual(propertyWithOwnerSetCount);
+        it('should handle rogue model settings', () => {
+            const rogueModelSettings = svc.getModelSettings<any>("rogue");
+            expect(rogueModelSettings).toBeTruthy();
+            expect(rogueModelSettings.properties).toBeUndefined();
         });
     });
 
@@ -125,6 +142,24 @@ describe('RulesEngineService', () => {
 
             it('should process falsey rule and return positive', () => {
                 expect(svc.processRuleSet({ name: "Whatever"}, null)).toBeTruthy();
+            });
+
+            it('should process rule set with truthy "any" when first rule passes', () => {
+                const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
+                const result = svc.processRuleSet({name: 'Chris'}, ruleSet);
+                expect(result).toBeTruthy();
+            });
+
+            it('should process rule set with truthy "any" when second rule passes', () => {
+                const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
+                const result = svc.processRuleSet({name: 'Aubrey'}, ruleSet);
+                expect(result).toBeTruthy();
+            });
+
+            it('should process rule set with truthy "any" when no rules pass', () => {
+                const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
+                const result = svc.processRuleSet({name: 'Wrong Name'}, ruleSet);
+                expect(result).toBeFalsy();
             });
         });
 
@@ -230,8 +265,8 @@ describe('RulesEngineService', () => {
                 expect(results.passed).toBeTruthy();
                 expect(results.messages).toEqual([]);
                 expect(results.failedResults.length).toEqual(0);
-                expect(results.passedResults.length).toEqual(2);
-                expect(results.results.length).toEqual(2);
+                expect(results.passedResults.length).toEqual(3);
+                expect(results.results.length).toEqual(3);
             });
 
             it('should handle failed tests', () => {
@@ -240,8 +275,8 @@ describe('RulesEngineService', () => {
                 expect(results.passed).toBeFalsy();
                 expect(results.messages).toEqual(["Doesn't equal Chris"]);
                 expect(results.failedResults.length).toEqual(1);
-                expect(results.passedResults.length).toEqual(1);
-                expect(results.results.length).toEqual(2);
+                expect(results.passedResults.length).toEqual(2);
+                expect(results.results.length).toEqual(3);
             });
 
             it('should handle when provided falsey tests', () => {
@@ -271,8 +306,8 @@ describe('RulesEngineService', () => {
                         expect(results.passed).toBeTruthy();
                         expect(results.messages).toEqual([]);
                         expect(results.failedResults.length).toEqual(0);
-                        expect(results.passedResults.length).toEqual(2);
-                        expect(results.results.length).toEqual(2);
+                        expect(results.passedResults.length).toEqual(3);
+                        expect(results.results.length).toEqual(3);
                     });
             });
 
@@ -468,6 +503,17 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
                         }
                     },
                     {
+                        name: "Chris async only",
+                        message: "Doesn't equal Chris async only",
+                        check: {
+                            rules: [
+                                {
+                                    asyncFunc: x => of(x.name == "Chris")
+                                }
+                            ],
+                        }
+                    },
+                    {
                         name: "Condition never met",
                         message: "This should never happen",
                         // would always fail validation
@@ -532,9 +578,41 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
     }
 }
 
-class EmptyModelSettings extends AbstractModelSettings<Person> {
+class AnyModelSettings extends AbstractModelSettings<Person> {
+    protected buildPropertyRules(): Property<Person>[] {
+        return [
+            this.builder.property('name', p => {
+                p.valid = [
+                    {
+                        name: "name",
+                        message: "Name must be Chris or Aubrey",
+                        check: {
+                            any: true,
+                            rules: [
+                                {
+                                    func: (person) => person.name == "Chris"
+                                },
+                                {
+                                    func: (person) => person.name == "Aubrey"
+                                }
+                            ]
+                        }
+                    }
+                ];
+            })
+        ];
+    }
+}
+
+class NullModelSettings extends AbstractModelSettings<Person> {
     protected buildPropertyRules(): Property<Person>[] {
         return null;
+    }
+}
+
+class EmptyModelSettings extends AbstractModelSettings<Person> {
+    protected buildPropertyRules(): Property<Person>[] {
+        return [];
     }
 }
 

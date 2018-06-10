@@ -31,7 +31,7 @@ class PersonModelValidSettings extends AbstractModelSettings<Person> {
                             name: "Nickname items test",
                             check: {
                                 func: (x, root) => root.age == 100,
-                                options: { dependencyProperties: ["/age"] }
+                                options: { dependencyProperties: ["/age", "bad.dep.property.path", null, {bad: "path"} as any] }
                             }
                         }
                     ];
@@ -80,7 +80,7 @@ class PersonModelEditSettings extends AbstractModelSettings<Person> {
                             name: "Nickname items test",
                             check: {
                                 func: (x, root) => root.age == 100,
-                                options: { dependencyProperties: ["/age"] }
+                                options: { dependencyProperties: ["/age", "bad.dep.property.path", null, {bad: "path"} as any] }
                             }
                         }
                     ];

@@ -109,7 +109,7 @@ export class ReactiveFormsRuleService {
     private buildGroup<T>(properties: Property<T>[], value?: any): FormGroup {
         const formGroup = this.formBuilder.group({});
 
-        properties.forEach(p => {
+        (properties || []).forEach(p => {
             const propertyValue = value ? value[p.name] : null;
             const ctrl = this.buildAbstractControl(p, propertyValue);
             formGroup.addControl(p.name, ctrl);
@@ -152,7 +152,7 @@ export class ReactiveFormsRuleService {
     }
 
     private setupDependencySubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number): void {
-        properties.forEach(property => {
+        (properties || []).forEach(property => {
             // remove any existing dependency property subscriptions
             if (property.dependencyPropertySubscriptions.length
                 && (!this.commonSvc.isZeroOrGreater(arrayIndex) || arrayIndex === 0)
@@ -287,6 +287,8 @@ export class ReactiveFormsRuleService {
 
     private buildControlRelativePathArray(relativePath: string): string[] {
         const result: string[] = [];
+
+        if (!relativePath || typeof relativePath !== "string" ) return result;
 
         // takes care of './', '../', and '/'
         const slashSeparated = relativePath.split("/");
