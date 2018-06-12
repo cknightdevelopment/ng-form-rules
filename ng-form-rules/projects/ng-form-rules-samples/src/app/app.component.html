@@ -1,0 +1,63 @@
+<div style="text-align:center">
+  <h1>
+    ng-form-rules
+  </h1>
+</div>
+<div>
+  <h3>Registration</h3>
+  <form [formGroup]="registerForm" (submit)="registerUser()">
+      <input type="text" id="username" name="username" formControlName="username" />
+      <pre><code>{{registerForm.get('username').errors | json}}</code></pre>
+
+      <input type="text" id="password" name="password" formControlName="password" />
+      <pre><code>{{registerForm.get('password').errors | json}}</code></pre>
+
+      <input type="text" id="confirmPassword" name="confirmPassword" formControlName="confirmPassword" />
+      <pre><code>{{registerForm.get('confirmPassword').errors | json}}</code></pre>
+
+      <input type="checkbox" id="acceptTerms" name="acceptTerms" formControlName="acceptTerms" />
+      <pre><code>{{registerForm.get('acceptTerms').errors | json}}</code></pre>
+
+      <button type="submit">Register</button>
+  </form>
+
+  <h3>Sandbox</h3>
+  <form [formGroup]="sampleFormGroup">
+    <input type="text" id="title" name="title" formControlName="title" />
+    <pre><code>{{sampleFormGroup.get('title').errors | json}}</code></pre>
+
+    <input type="number" id="pageCount" name="pageCount" formControlName="pageCount" />
+    <pre><code>{{sampleFormGroup.get('pageCount').errors | json}}</code></pre>
+
+    <h3>Author</h3>
+    <div formGroupName="author">
+      <input type="text" id="name" name="name" formControlName="name" />
+      <pre><code>{{sampleFormGroup.get('author.name').errors | json}}</code></pre>
+    </div>
+
+    <h3>Similar Books</h3>
+    <div formArrayName="similarBooks">
+      <div *ngFor="let books of sampleFormGroup.get('similarBooks').controls; let i=index" [formGroupName]="i" >
+        <input type="text" id="title" name="title" formControlName="title" />
+      </div>
+    </div>
+
+    <h3>Favorite Book Sets</h3>
+    <pre><code>{{sampleFormGroup.get('favoriteBookSets').errors | json}}</code></pre>
+    <button type="button" (click)="addBookSet()">Add Book Set</button>
+
+    <div formArrayName="favoriteBookSets">
+      <div *ngFor="let set of sampleFormGroup.get('favoriteBookSets').controls; let i=index" [formGroupName]="i" >
+        <button type="button" (click)="addBookInSet(i)">Add Book In Set</button>
+        <div *ngFor="let book of set.controls; let j=index" [formGroupName]="j">
+          <input type="text" formControlName="title" />
+        </div>
+      </div>
+    </div>
+
+    <pre><code>{{sampleFormGroup.value | json}}</code></pre>
+    
+  </form>
+</div>
+
+
