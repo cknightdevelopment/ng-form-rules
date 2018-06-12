@@ -108,6 +108,7 @@ class PersonModelEditSettings extends AbstractModelSettings<Person> {
                         name: "Name test",
                         check: {
                             func: x =>  x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                            asyncFunc: (x, root) => of(root.age == 100),
                             options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
                         }
                     }
@@ -303,6 +304,22 @@ describe('ReactiveFormsRuleService', () => {
                 expect(nameControl.enabled).toBeFalsy();
                 fg.patchValue(validPerson);
                 expect(nameControl.enabled).toBeTruthy();
+            });
+        });
+
+        describe('async', () => {
+            it('should pass async test', () => {
+                const fg = svc.createFormGroup(editSettingsKey, validPerson);
+                const nameControl = fg.get('name');
+
+                expect(nameControl.enabled).toBeTruthy();
+            });
+
+            it('should fail async test', () => {
+                const fg = svc.createFormGroup(editSettingsKey, Object.assign({}, validPerson, { age: 200 }));
+                const nameControl = fg.get('name');
+
+                expect(nameControl.enabled).toBeFalsy();
             });
         });
     });

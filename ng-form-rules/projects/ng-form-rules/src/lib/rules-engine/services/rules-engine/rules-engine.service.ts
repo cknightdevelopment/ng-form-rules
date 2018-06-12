@@ -11,7 +11,7 @@ import { TestRunState } from '../../../form-rules/models/test-run-state';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
 import { Observable, from , forkJoin, of } from 'rxjs';
-import { takeWhile, concatMap, filter, map, flatMap } from 'rxjs/operators';
+import { takeWhile, concatMap, filter, map, flatMap, mergeMap, take } from 'rxjs/operators';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { PropertyTestResults } from '../../../form-rules/models/property-test-result';
 import { PropertyBase } from '../../../form-rules/models/property-base';
@@ -45,7 +45,7 @@ export class RulesEngineService {
      * @returns Model settings with the provided name
      */
     getModelSettings<T>(name: string): AbstractModelSettings<T> {
-        this.traceSvc.trace(`Getting model settings "${name}"`);
+        this.traceSvc.trace(`Retrieving model settings "${name}"`);
         return this.modelSettings[name];
     }
 
@@ -101,7 +101,7 @@ export class RulesEngineService {
     }
 
     /**
-     * Runs an array of tests
+     * Runs an array of sync tests
      * @param data Data to perform tests against
      * @param tests Tests to run
      * @returns Result of tests
@@ -114,7 +114,7 @@ export class RulesEngineService {
     }
 
     /**
-     * Runs an array of tests
+     * Runs an array of async tests
      * @param data Data to perform tests against
      * @param tests Tests to run
      * @returns Result of tests
@@ -132,7 +132,28 @@ export class RulesEngineService {
     }
 
     /**
-     * Performs test on a set of data
+     * Runs an array of sync and async tests
+     * @param data Data to perform tests against
+     * @param tests Tests to run
+     * @returns Result of tests
+     */
+    runAllTests<T>(data: T, tests: Test<T>[], state?: TestRunState): Observable<TestResultsBase<T>> {
+        if (!tests || !tests.length) return of(new TestResultsBase([]));
+
+        const syncTestResults = of(this.runTests(data, tests, state));
+
+        return syncTestResults.pipe(
+            mergeMap(result => {
+                if (!result.passed) return of(result);
+
+                return this.runTestsAsync(data, tests, state);
+            }),
+            take(1)
+        );
+    }
+
+    /**
+     * Performs sync test on a set of data
      * @param data Data to perform test against
      * @param test Test to run
      * @returns Result of test
@@ -179,7 +200,7 @@ export class RulesEngineService {
     }
 
     /**
-     * Processes a rule set
+     * Processes a sync rule set
      * @param data Data to process rule set against
      * @param ruleSet Rule set to process
      * @returns Result of rule set processing

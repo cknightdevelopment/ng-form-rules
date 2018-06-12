@@ -8,8 +8,8 @@ import { ArrayItemProperty } from "../../../form-rules/models/array-item-propert
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { FormatWidth } from "@angular/common";
 import { TraceService } from "../../../utils/trace/trace.service";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, of, pipe } from "rxjs";
+import { map, concatMap, takeWhile, mergeMap, first, take } from "rxjs/operators";
 import { TestResultsBase } from "../../../form-rules/models/test-results-base";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
 import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";
@@ -44,8 +44,13 @@ export class ReactiveFormsRuleService {
         const settings = this.rulesEngineSvc.getModelSettings(modelSettingName);
         if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
 
+        this.traceSvc.trace(`Creating form group using model settings "${modelSettingName}"`);
         const formGroup = this.buildGroup(settings.properties, initialValue);
+
+        this.traceSvc.trace(`Setting up dependency subscriptions`);
         this.setupDependencySubscriptions(formGroup, settings.properties);
+
+        this.traceSvc.trace(`Patching form group with initial value`);
         if (initialValue) formGroup.patchValue(initialValue);
 
         return formGroup;
@@ -124,8 +129,10 @@ export class ReactiveFormsRuleService {
         return this.formBuilder.array(initialValue.map(v => this.buildAbstractControl(property, v)));
     }
 
-    private buildValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): ValidatorFn {
+    private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
         return (control: AbstractControl): ValidationErrors => {
+            this.traceSvc.trace(`Validating property "${property.absolutePath}"`);
+
             const controlContextValues = this.getControlContextValues(control, property);
 
             const testResults = this.rulesEngineSvc
@@ -138,8 +145,10 @@ export class ReactiveFormsRuleService {
         };
     }
 
-    private buildAsyncValidatorFunction<T>(property: Property<T> | ArrayItemProperty<T>): AsyncValidatorFn {
+    private buildAsyncValidatorFunction<T>(property: PropertyBase<T>): AsyncValidatorFn {
         return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
+            this.traceSvc.trace(`Validating (async) property "${property.absolutePath}"`);
+
             const controlContextValues = this.getControlContextValues(control, property);
 
             return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, {
@@ -157,7 +166,7 @@ export class ReactiveFormsRuleService {
             if (property.dependencyPropertySubscriptions.length
                 && (!this.commonSvc.isZeroOrGreater(arrayIndex) || arrayIndex === 0)
             ) {
-                property.dependencyPropertySubscriptions.forEach(dps$ => dps$.unsubscribe());
+                property.clearDependencyPropertySubscriptions();
             }
 
             const propertyControl = this.getPropertyFromParent(parentControl, property, arrayIndex);
@@ -220,18 +229,19 @@ export class ReactiveFormsRuleService {
     }
 
     private persistEditTests<T>(propertyControl: AbstractControl, property: PropertyBase<T>): void {
+        this.traceSvc.trace(`Editable property "${property.absolutePath}"`);
+
         const controlContextValues = this.getControlContextValues(propertyControl, property);
 
-        const testResults = this.rulesEngineSvc
-            .runTests(controlContextValues.relative, property.edit, {
-                rootData: controlContextValues.root,
-                controlState: ControlState.create(propertyControl)
-            });
-
-        if (testResults.passed && propertyControl.disabled)
-            propertyControl.enable({emitEvent: false});
-        else if (!testResults.passed && propertyControl.enabled)
-            propertyControl.disable({emitEvent: false});
+        this.rulesEngineSvc.runAllTests(controlContextValues.relative, property.edit, {
+            rootData: controlContextValues.root,
+            controlState: ControlState.create(propertyControl)
+        }).subscribe(testResults => {
+            if (testResults.passed && propertyControl.disabled)
+                propertyControl.enable({emitEvent: false});
+            else if (!testResults.passed && propertyControl.enabled)
+                propertyControl.disable({emitEvent: false});
+        });
     }
 
     private getControlContextValues<T>(control: AbstractControl, property: Property<T> | ArrayItemProperty<T>): ControlContextValues {

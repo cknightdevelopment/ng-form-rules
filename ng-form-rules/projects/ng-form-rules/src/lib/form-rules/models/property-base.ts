@@ -69,6 +69,14 @@ export abstract class PropertyBase<T> {
     /**
      * Internal use only, do not call!
      */
+    clearDependencyPropertySubscriptions(): void {
+        this.dependencyPropertySubscriptions.forEach(sub$ => sub$.unsubscribe());
+        this._dependencyPropertySubscriptions = [];
+    }
+
+    /**
+     * Internal use only, do not call!
+     */
     setOwnerModelSettingsName(name: string): void {
         this._ownerModelSettingsName = name;
     }
