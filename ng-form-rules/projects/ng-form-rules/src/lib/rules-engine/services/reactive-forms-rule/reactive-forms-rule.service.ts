@@ -3,19 +3,18 @@ import { Injectable } from "@angular/core";
 import { FormGroup, AbstractControl, ValidatorFn, FormBuilder, FormControl, FormArray, ValidationErrors, AsyncValidatorFn } from '@angular/forms';
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { Property } from "../../../form-rules/models/property";
-import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { PropertyBase } from "../../../form-rules/models/property-base";
-import { FormatWidth } from "@angular/common";
 import { TraceService } from "../../../utils/trace/trace.service";
-import { Observable, of, pipe } from "rxjs";
-import { map, concatMap, takeWhile, mergeMap, first, take } from "rxjs/operators";
+import { Observable } from "rxjs";
+import { map, tap } from "rxjs/operators";
 import { TestResultsBase } from "../../../form-rules/models/test-results-base";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
 import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";
 import { ReactiveFormsValidationErrorsData } from "../../../form-rules/models/reactive-forms-validation-errors-data";
 import { ControlState } from "../../../form-rules/models/control-state";
 import { CommonService } from "../../../utils/common/common.service";
+import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 // tslint:enable:max-line-length
 
 /**
@@ -23,6 +22,8 @@ import { CommonService } from "../../../utils/common/common.service";
  */
 @Injectable()
 export class ReactiveFormsRuleService {
+    private static readonly FORM_MODEL_SETTINGS_PROPERTY_NAME = 'ngFormRulesModelSetting';
+
     constructor(
         private rulesEngineSvc: RulesEngineService,
         private formBuilder: FormBuilder,
@@ -53,6 +54,8 @@ export class ReactiveFormsRuleService {
         this.traceSvc.trace(`Patching form group with initial value`);
         if (initialValue) formGroup.patchValue(initialValue);
 
+        this.attachModelSettingsToForm(formGroup, settings);
+
         return formGroup;
     }
 
@@ -79,7 +82,7 @@ export class ReactiveFormsRuleService {
 
         const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : index;
 
-        const modelSettings = this.rulesEngineSvc.getModelSettings(property.ownerModelSettingsName);
+        const modelSettings = this.getModelSettingsFromForm(parentFormArray.root as FormGroup);
         this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties, postAddIndex);
 
         if (initialValue)
@@ -131,8 +134,6 @@ export class ReactiveFormsRuleService {
 
     private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
         return (control: AbstractControl): ValidationErrors => {
-            this.traceSvc.trace(`Validating property "${property.absolutePath}"`);
-
             const controlContextValues = this.getControlContextValues(control, property);
 
             const testResults = this.rulesEngineSvc
@@ -141,20 +142,29 @@ export class ReactiveFormsRuleService {
                     controlState: ControlState.create(control)
                 });
 
+            if (testResults.results.length) {
+                this.traceSvc.trace(`Validated property "${property.absolutePath}". ` +
+                    this.buildTestResultStatsString(testResults));
+            }
+
             return this.mapToReactiveFormsValidationErrors(testResults);
         };
     }
 
     private buildAsyncValidatorFunction<T>(property: PropertyBase<T>): AsyncValidatorFn {
         return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
-            this.traceSvc.trace(`Validating (async) property "${property.absolutePath}"`);
-
             const controlContextValues = this.getControlContextValues(control, property);
 
             return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, {
                 rootData: controlContextValues.root,
                 controlState: ControlState.create(control)
             }).pipe(
+                tap(testResults => {
+                    if (testResults.results.length) {
+                        this.traceSvc.trace(`Validated (async) property "${property.absolutePath}". ` +
+                            this.buildTestResultStatsString(testResults));
+                    }
+                }),
                 map(this.mapToReactiveFormsValidationErrors)
             );
         };
@@ -229,14 +239,17 @@ export class ReactiveFormsRuleService {
     }
 
     private persistEditTests<T>(propertyControl: AbstractControl, property: PropertyBase<T>): void {
-        this.traceSvc.trace(`Editable property "${property.absolutePath}"`);
-
         const controlContextValues = this.getControlContextValues(propertyControl, property);
 
         this.rulesEngineSvc.runAllTests(controlContextValues.relative, property.edit, {
             rootData: controlContextValues.root,
             controlState: ControlState.create(propertyControl)
         }).subscribe(testResults => {
+            if (testResults.results.length) {
+                this.traceSvc.trace(`Editable property "${property.absolutePath}". ` +
+                    this.buildTestResultStatsString(testResults));
+            }
+
             if (testResults.passed && propertyControl.disabled)
                 propertyControl.enable({emitEvent: false});
             else if (!testResults.passed && propertyControl.enabled)
@@ -327,6 +340,19 @@ export class ReactiveFormsRuleService {
             default:
                 return control.get(pathSegment);
         }
+    }
+
+    private buildTestResultStatsString<T>(testResults: TestResultsBase<T>) {
+        return `Executed ${testResults.results.length} tests ` +
+            `(${testResults.passedResults.length} PASS | ${testResults.failedResults.length} FAIL)`;
+    }
+
+    private attachModelSettingsToForm<T>(formGroup: FormGroup, modelSettings: AbstractModelSettings<T>) {
+        formGroup[ReactiveFormsRuleService.FORM_MODEL_SETTINGS_PROPERTY_NAME] = modelSettings;
+    }
+
+    private getModelSettingsFromForm<T>(formGroup: FormGroup) {
+        return formGroup[ReactiveFormsRuleService.FORM_MODEL_SETTINGS_PROPERTY_NAME] as AbstractModelSettings<T>;
     }
 }
 

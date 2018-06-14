@@ -6,14 +6,11 @@ import { MODEL_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/model
 import { Person } from "../../../test-utils/models/person";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 import { Property } from "../../../form-rules/models/property";
-import { TraceService } from "../../../utils/trace/trace.service";
 import { TRACE_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/trace-settings.token";
 import { Car } from "../../../test-utils/models/car";
 import { UtilsModule } from "../../../utils/utils.module";
 import { of } from "rxjs";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
-import { Component, OnInit } from "@angular/core";
-import { ValueTransformer } from "@angular/compiler/src/util";
 
 const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: "Subaru" }, nicknames: ["C-TOWN", "C"] };
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };

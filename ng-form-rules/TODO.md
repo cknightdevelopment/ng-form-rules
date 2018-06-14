@@ -4,7 +4,6 @@
 - smarter tracing
 
 ### Testing
-- reactive forms different scenarios
 
 ### Dev Ops
 - npm readme

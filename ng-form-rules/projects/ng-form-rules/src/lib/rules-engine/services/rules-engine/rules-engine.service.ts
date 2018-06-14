@@ -10,7 +10,7 @@ import { RuleSet } from '../../../form-rules/models/rule-set';
 import { TestRunState } from '../../../form-rules/models/test-run-state';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
-import { Observable, from , forkJoin, of } from 'rxjs';
+import { Observable, from , forkJoin, of, pipe } from 'rxjs';
 import { takeWhile, concatMap, filter, map, flatMap, mergeMap, take } from 'rxjs/operators';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { PropertyTestResults } from '../../../form-rules/models/property-test-result';
@@ -21,7 +21,6 @@ import { PropertyBase } from '../../../form-rules/models/property-base';
  */
 @Injectable()
 export class RulesEngineService {
-
     private modelSettings: { [key: string]: AbstractModelSettings<any>; };
 
     constructor(
@@ -46,7 +45,13 @@ export class RulesEngineService {
      */
     getModelSettings<T>(name: string): AbstractModelSettings<T> {
         this.traceSvc.trace(`Retrieving model settings "${name}"`);
-        return this.modelSettings[name];
+
+        const settings = this.modelSettings[name];
+
+        // create new object as we manage
+        return settings
+            ? Object.assign({}, this.modelSettings[name])
+            : null;
     }
 
     /**
@@ -109,7 +114,10 @@ export class RulesEngineService {
     runTests<T>(data: T, tests: Test<T>[], state?: TestRunState): TestResultsBase<T> {
         if (!tests || !tests.length) return new TestResultsBase([]);
 
-        const testResults = tests.map(t => this.runTest(data, t, state));
+        const testResults = tests
+            .map(t => this.runTest(data, t, state))
+            .filter(x => !!x);
+
         return new TestResultsBase(testResults);
     }
 
@@ -127,7 +135,7 @@ export class RulesEngineService {
 
         return forkJoin(runTest$)
             .pipe(
-                map(testResults => new TestResultsBase(testResults))
+                map(testResults => new TestResultsBase(testResults.filter(result => !!result)))
             );
     }
 
@@ -159,16 +167,25 @@ export class RulesEngineService {
      * @returns Result of test
      */
     runTest<T>(data: T, test: Test<T>, state?: TestRunState): TestResult<T> {
-        if (!test) return { passed: true, name: null, message: null };
+        if (!test) return null;
 
         const passedTestResult: TestResult<T> = { passed: true, name: test.name, message: null };
         const failedTestResult: TestResult<T> = { passed: false, name: test.name, message: test.message };
 
-        const conditionsMet = this.processRuleSet(data, test.condition, state);
-        if (!conditionsMet) return passedTestResult;
+        const conditionsRuleSetResult = this.processRuleSet(data, test.condition, state);
+        if (conditionsRuleSetResult === RuleSetResultType.Failed) return null;
 
-        const passed = this.processRuleSet(data, test.check, state);
-        return passed ? passedTestResult : failedTestResult;
+        const checkRuleSetResult = this.processRuleSet(data, test.check, state);
+        switch (checkRuleSetResult) {
+            case RuleSetResultType.Passed:
+                return passedTestResult;
+            case RuleSetResultType.Failed:
+                return failedTestResult;
+            case RuleSetResultType.Skipped:
+                return null;
+            default:
+                return null;
+        }
     }
 
     /**
@@ -178,22 +195,33 @@ export class RulesEngineService {
      * @returns Result of test
      */
     runTestAsync<T>(data: T, test: Test<T>, state?: TestRunState): Observable<TestResult<T>> {
-        if (!test) return of({ passed: true, name: null, message: null });
+        if (!test) return of(null);
 
         const passedTestResult: TestResult<T> = { passed: true, name: test.name, message: null };
         const failedTestResult: TestResult<T> = { passed: false, name: test.name, message: test.message };
 
-        const condition$ = this.processRuleSetAsync(data, test.condition, state);
-        const check$ = this.processRuleSetAsync(data, test.check, state);
+        const conditionsRuleSetResult$ = this.processRuleSetAsync(data, test.condition, state);
+        const checkRuleSetResult$ = this.processRuleSetAsync(data, test.check, state);
 
-        return condition$
+        return conditionsRuleSetResult$
             .pipe(
-                flatMap(conditionsMet => {
-                    if (!conditionsMet) return of(passedTestResult);
+                flatMap(conditionsRuleSetResult => {
+                    if (conditionsRuleSetResult === RuleSetResultType.Failed) return of(passedTestResult);
 
-                    return check$
+                    return checkRuleSetResult$
                         .pipe(
-                            map(passed => passed ? passedTestResult : failedTestResult)
+                            map(checkRuleSetResult => {
+                                switch (checkRuleSetResult) {
+                                    case RuleSetResultType.Passed:
+                                        return passedTestResult;
+                                    case RuleSetResultType.Failed:
+                                        return failedTestResult;
+                                    case RuleSetResultType.Skipped:
+                                        return null;
+                                    default:
+                                        return null;
+                                }
+                            })
                         );
                 })
             );
@@ -205,8 +233,8 @@ export class RulesEngineService {
      * @param ruleSet Rule set to process
      * @returns Result of rule set processing
      */
-    processRuleSet<T>(data: T, ruleSet: RuleSet<T>, state?: TestRunState): boolean {
-        if (!ruleSet) return true;
+    processRuleSet<T>(data: T, ruleSet: RuleSet<T>, state?: TestRunState): RuleSetResultType {
+        if (!ruleSet) return RuleSetResultType.Skipped;
 
         const isRuleGroup = this.isRuleGroup(ruleSet);
         return isRuleGroup
@@ -220,8 +248,8 @@ export class RulesEngineService {
      * @param ruleSet Rule set to process
      * @returns Result of rule set processing
      */
-    processRuleSetAsync<T>(data: T, ruleSet: RuleSet<T>, state?: TestRunState): Observable<boolean> {
-        if (!ruleSet) return of(true);
+    processRuleSetAsync<T>(data: T, ruleSet: RuleSet<T>, state?: TestRunState): Observable<RuleSetResultType> {
+        if (!ruleSet) return of(RuleSetResultType.Skipped);
 
         const isRuleGroup = this.isRuleGroup(ruleSet);
         return isRuleGroup
@@ -229,23 +257,28 @@ export class RulesEngineService {
             : this.processRuleAsync(data, ruleSet as Rule<T>, state);
     }
 
-    private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): boolean {
+    private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): RuleSetResultType {
         let passedCount = 0;
+        let skippedCount = 0;
 
         for (let i = 0; i < ruleGroup.rules.length; i++) {
             const rule = ruleGroup.rules[i];
-            const passed = this.processRuleSet(data, rule, state);
+            const ruleSetResult = this.processRuleSet(data, rule, state);
 
-            if (this.canShortCircuitRuleGroup(passed, ruleGroup)) return passed;
+            if (this.canShortCircuitRuleGroup(ruleSetResult, ruleGroup)) return ruleSetResult;
 
-            if (passed) passedCount++;
+            if (ruleSetResult == RuleSetResultType.Passed) passedCount++;
+            else if (ruleSetResult == RuleSetResultType.Skipped) skippedCount++;
         }
 
+        // if we skipped them all, then return skipped
+        if (skippedCount === ruleGroup.rules.length) return RuleSetResultType.Skipped;
+
         // if we got this far, make sure all tests were passed
-        return (passedCount === ruleGroup.rules.length && !ruleGroup.any);
+        return passedCount === ruleGroup.rules.length ? RuleSetResultType.Passed : RuleSetResultType.Failed;
     }
 
-    private processRuleGroupAsync<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): Observable<boolean> {
+    private processRuleGroupAsync<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): Observable<RuleSetResultType> {
         return from(ruleGroup.rules)
             .pipe(
                 concatMap(ruleSet => this.processRuleSetAsync(data, ruleSet, state)),
@@ -253,18 +286,21 @@ export class RulesEngineService {
             );
     }
 
-    private processRule<T>(data: T, rule: Rule<T>, state?: TestRunState): boolean {
-        if (!this.doProcessRule(rule, state, false)) return true;
+    private processRule<T>(data: T, rule: Rule<T>, state?: TestRunState): RuleSetResultType {
+        if (!this.doProcessRule(rule, state, false)) return RuleSetResultType.Skipped;
 
         const rootData = state ? state.rootData : null;
-        return rule.func(data, rootData);
+        return rule.func(data, rootData) ? RuleSetResultType.Passed : RuleSetResultType.Failed;
     }
 
-    private processRuleAsync<T>(data: T, rule: Rule<T>, state?: TestRunState): Observable<boolean> {
-        if (!this.doProcessRule(rule, state, true)) return of(true);
+    private processRuleAsync<T>(data: T, rule: Rule<T>, state?: TestRunState): Observable<RuleSetResultType> {
+        if (!this.doProcessRule(rule, state, true)) return of(RuleSetResultType.Skipped);
 
         const rootData = state ? state.rootData : null;
-        return rule.asyncFunc(data, rootData);
+        return rule.asyncFunc(data, rootData)
+            .pipe(
+                map(passed => passed ? RuleSetResultType.Passed : RuleSetResultType.Failed)
+            );
     }
 
     private doProcessRule<T>(rule: Rule<T>, state: TestRunState, isAsync: boolean): boolean {
@@ -280,12 +316,12 @@ export class RulesEngineService {
         return true;
     }
 
-    private canShortCircuitRuleGroup<T>(passed: boolean, ruleGroup: RuleGroup<T>) {
-        return (passed && ruleGroup.any) // it passed, and we only need one to pass
-            || (!passed && !ruleGroup.any); // if failed, and we need all to pass
+    private canShortCircuitRuleGroup<T>(ruleSetResult: RuleSetResultType, ruleGroup: RuleGroup<T>): boolean {
+        return (ruleSetResult == RuleSetResultType.Passed && ruleGroup.any) // it passed, and we only need one to pass
+            || (ruleSetResult == RuleSetResultType.Failed && !ruleGroup.any); // if failed, and we need all to pass
     }
 
-    private isRuleGroup<T>(ruleSet: RuleSet<T>) {
+    private isRuleGroup<T>(ruleSet: RuleSet<T>): boolean {
         const rule = ruleSet as Rule<T>;
         return !rule.func && !rule.asyncFunc;
     }
@@ -316,7 +352,7 @@ export class RulesEngineService {
         return this.commonSvc.unique(result);
     }
 
-    private setPropertyAbsolutePaths(properties: PropertyBase<any>[], currentAbsolutePath: string = '') {
+    private setPropertyAbsolutePaths(properties: PropertyBase<any>[], currentAbsolutePath: string = ''): void {
         if (!properties) return;
 
         properties.forEach(prop => {
@@ -336,7 +372,7 @@ export class RulesEngineService {
         });
     }
 
-    private setPropertyOwnerModelSettingsName(modelSettingsName: string, properties: PropertyBase<any>[]) {
+    private setPropertyOwnerModelSettingsName(modelSettingsName: string, properties: PropertyBase<any>[]): void {
         if (!properties) return;
 
         properties.forEach(prop => {
@@ -349,4 +385,10 @@ export class RulesEngineService {
             }
         });
     }
+}
+
+export enum RuleSetResultType {
+    Passed,
+    Failed,
+    Skipped
 }

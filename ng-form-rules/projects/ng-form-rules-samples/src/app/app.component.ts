@@ -8,38 +8,20 @@ import { FormGroup, FormArray } from '@angular/forms';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  sampleFormGroup: FormGroup;
   registerForm: FormGroup;
-  registerFormSubmitted: boolean;
+  registerForm2: FormGroup;
 
   constructor(private svc: ReactiveFormsRuleService, private engine: RulesEngineService) {
   }
 
   ngOnInit(): void {
-    this.sampleFormGroup = this.svc.createFormGroup('book', {
-      title: 'Great Gatsby',
-      similarBooks: [ {title: "Another Book 1"}, {title: "Another Book 2"}, {title: "Another Book 3"} ],
-      favoriteBookSets: [[{title: "1"}, {title: "2"}, {title: "3"}], [{title: "7"}, {title: "8"}, {title: "9"}]]
-    });
+    // this.sampleFormGroup = this.svc.createFormGroup('book', {
+    //   title: 'Great Gatsby',
+    //   similarBooks: [ {title: "Another Book 1"}, {title: "Another Book 2"}, {title: "Another Book 3"} ],
+    //   favoriteBookSets: [[{title: "1"}, {title: "2"}, {title: "3"}], [{title: "7"}, {title: "8"}, {title: "9"}]]
+    // });
 
     this.registerForm = this.svc.createFormGroup('register');
-  }
-
-  registerUser() {
-    this.registerFormSubmitted = true;
-  }
-
-  addBookSet() {
-    const settings = this.engine.getModelSettings("book");
-    const g = settings.properties.find(p => p.name === "favoriteBookSets").arrayItemProperty;
-    this.svc.addArrayItemPropertyControl(g, this.sampleFormGroup.get('favoriteBookSets') as FormArray, [{title: "added"}]);
-  }
-
-  addBookInSet(setNumber: number) {
-    const settings = this.engine.getModelSettings("book");
-    const g = settings.properties.find(p => p.name === "favoriteBookSets").arrayItemProperty.arrayItemProperty;
-    this.svc.addArrayItemPropertyControl(
-      g, this.sampleFormGroup.get(`favoriteBookSets.${setNumber}`) as FormArray, {title: "added to set"});
   }
 }
 

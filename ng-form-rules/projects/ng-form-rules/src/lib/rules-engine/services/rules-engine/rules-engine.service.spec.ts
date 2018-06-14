@@ -1,21 +1,16 @@
 import { TestBed, inject } from '@angular/core/testing';
 
-import { RulesEngineService } from './rules-engine.service';
+import { RulesEngineService, RuleSetResultType } from './rules-engine.service';
 import { MODEL_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/model-settings.token';
 import { AbstractModelSettings } from '../../../form-rules/models/abstract-model-settings';
 import { Property } from '../../../form-rules/models/property';
-import { RuleGroup } from '../../../form-rules/models/rule-group';
 import { TestResult } from '../../../form-rules/models/test-result';
 import { Person } from '../../../test-utils/models/person';
 import { Rule } from '../../../form-rules/models/rule';
 import { Test } from '../../../form-rules/models/test';
-import { TraceService } from '../../../utils/trace/trace.service';
 import { TRACE_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/trace-settings.token';
-import { CommonService } from '../../../utils/common/common.service';
 import { UtilsModule } from '../../../utils/utils.module';
 import { of } from 'rxjs';
-import { ControlState } from '../../../form-rules/models/control-state';
-import { AbstractControl } from '@angular/forms';
 import { Car } from '../../../test-utils/models/car';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 
@@ -124,42 +119,42 @@ describe('RulesEngineService', () => {
         describe('sync', () => {
             it('should process rule group', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
-                expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
-                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+                expect(svc.processRuleSet(validPerson, ruleGroup)).toEqual(RuleSetResultType.Passed);
+                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toEqual(RuleSetResultType.Failed);
             });
 
             it('should process rule', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
-                expect(svc.processRuleSet(validPerson, ruleGroup)).toBeTruthy();
-                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toBeFalsy();
+                expect(svc.processRuleSet(validPerson, ruleGroup)).toEqual(RuleSetResultType.Passed);
+                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toEqual(RuleSetResultType.Failed);
             });
 
             it('should process rule using root data', () => {
                 const rule = { func: (x, root) => root.a === 1 } as Rule<any>;
-                expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toBeTruthy();
-                expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toBeFalsy();
+                expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toEqual(RuleSetResultType.Passed);
+                expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toEqual(RuleSetResultType.Failed);
             });
 
             it('should process falsey rule and return positive', () => {
-                expect(svc.processRuleSet({ name: "Whatever"}, null)).toBeTruthy();
+                expect(svc.processRuleSet({ name: "Whatever"}, null)).toEqual(RuleSetResultType.Skipped);
             });
 
             it('should process rule set with truthy "any" when first rule passes', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 const result = svc.processRuleSet({name: 'Chris'}, ruleSet);
-                expect(result).toBeTruthy();
+                expect(result).toEqual(RuleSetResultType.Passed);
             });
 
             it('should process rule set with truthy "any" when second rule passes', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 const result = svc.processRuleSet({name: 'Aubrey'}, ruleSet);
-                expect(result).toBeTruthy();
+                expect(result).toEqual(RuleSetResultType.Passed);
             });
 
             it('should process rule set with truthy "any" when no rules pass', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 const result = svc.processRuleSet({name: 'Wrong Name'}, ruleSet);
-                expect(result).toBeFalsy();
+                expect(result).toEqual(RuleSetResultType.Failed);
             });
         });
 
@@ -167,32 +162,32 @@ describe('RulesEngineService', () => {
             it('should process rule group', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 svc.processRuleSetAsync(validPerson, ruleGroup)
-                    .subscribe(x => expect(x).toBeTruthy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
                 svc.processRuleSetAsync(invalidPerson, ruleGroup)
-                    .subscribe(x => expect(x).toBeFalsy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
             });
 
             it('should process rule', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
 
                 svc.processRuleSetAsync(validPerson, ruleGroup)
-                    .subscribe(x => expect(x).toBeTruthy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
                 svc.processRuleSetAsync(invalidPerson, ruleGroup)
-                    .subscribe(x => expect(x).toBeFalsy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
             });
 
             it('should process rule using root data', () => {
                 const rule = { asyncFunc: (x, root) => of(root.a === 1) } as Rule<any>;
 
                 svc.processRuleSetAsync({}, rule, { rootData: { a: 1 } })
-                    .subscribe(x => expect(x).toBeTruthy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
                 svc.processRuleSetAsync({}, rule, { rootData: { a: 0 } })
-                    .subscribe(x => expect(x).toBeFalsy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
             });
 
             it('should process falsey rule and return positive', () => {
                 svc.processRuleSetAsync({ name: "Whatever"}, null)
-                    .subscribe(x => expect(x).toBeTruthy());
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Skipped));
             });
         });
     });
@@ -213,13 +208,13 @@ describe('RulesEngineService', () => {
 
             it('should handle when provided a falsey test', () => {
                 const result = svc.runTest({ name: "Whatever"}, null);
-                expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
+                expect(result).toBeFalsy();
             });
 
-            it('should pass rule where condition is not met', () => {
+            it('should handle rule where condition is not met', () => {
                 const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
                 const result = svc.runTest({}, test);
-                expect(result.passed).toBeTruthy();
+                expect(result).toBeFalsy();
             });
         });
 
@@ -243,15 +238,15 @@ describe('RulesEngineService', () => {
             it('should handle when provided a falsey test', () => {
                 svc.runTestAsync({ name: "Whatever"}, null)
                     .subscribe(result => {
-                        expect(result).toEqual({ passed: true, message: null, name: null } as TestResult<Person>);
+                        expect(result).toBeFalsy();
                     });
             });
 
-            it('should pass rule where condition is not met', () => {
+            it('should handle rule where condition is not met', () => {
                 const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
                 svc.runTestAsync({}, test)
                     .subscribe(result => {
-                        expect(result.passed).toBeTruthy();
+                        expect(result).toBeFalsy();
                     });
             });
         });
@@ -265,8 +260,8 @@ describe('RulesEngineService', () => {
                 expect(results.passed).toBeTruthy();
                 expect(results.messages).toEqual([]);
                 expect(results.failedResults.length).toEqual(0);
-                expect(results.passedResults.length).toEqual(3);
-                expect(results.results.length).toEqual(3);
+                expect(results.passedResults.length).toEqual(1);
+                expect(results.results.length).toEqual(1);
             });
 
             it('should handle failed tests', () => {
@@ -275,8 +270,8 @@ describe('RulesEngineService', () => {
                 expect(results.passed).toBeFalsy();
                 expect(results.messages).toEqual(["Doesn't equal Chris"]);
                 expect(results.failedResults.length).toEqual(1);
-                expect(results.passedResults.length).toEqual(2);
-                expect(results.results.length).toEqual(3);
+                expect(results.passedResults.length).toEqual(0);
+                expect(results.results.length).toEqual(1);
             });
 
             it('should handle when provided falsey tests', () => {
