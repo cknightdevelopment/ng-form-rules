@@ -8,9 +8,9 @@ export abstract class PropertyBase<T> {
     private _dependencyPropertySubscriptions: Subscription[] = [];
     private _ownerModelSettingsName: string;
 
-    valid: Test<T>[];
-    edit: Test<T>[];
-    view: Test<T>[];
+    valid: Test<T>[] = [];
+    edit: Test<T>[] = [];
+    view: Test<T>[] = [];
 
     /**
      * Properties for a complex object

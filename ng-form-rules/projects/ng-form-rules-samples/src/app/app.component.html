@@ -1,27 +1,37 @@
 <div style="text-align:center">
-  <h1>
-    ng-form-rules
-  </h1>
+  <h1>ng-form-rules</h1>
 </div>
-<div>
+<div class="container-fluid">
   <h3>Registration</h3>
   <form [formGroup]="registerForm" (submit)="registerUser()">
-      <input type="text" id="username" name="username" formControlName="username" />
-      <pre><code>{{registerForm.get('username').errors | json}}</code></pre>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" formControlName="username" />
+        <samples-json-errors [control]="registerForm.get('username')"></samples-json-errors>
+      </div>
 
-      <input type="text" id="password" name="password" formControlName="password" />
-      <pre><code>{{registerForm.get('password').errors | json}}</code></pre>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="text" class="form-control" id="password" formControlName="password" />
+        <samples-json-errors [control]="registerForm.get('password')"></samples-json-errors>
+      </div>
 
-      <input type="text" id="confirmPassword" name="confirmPassword" formControlName="confirmPassword" />
-      <pre><code>{{registerForm.get('confirmPassword').errors | json}}</code></pre>
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input type="text" class="form-control" id="confirmPassword" formControlName="confirmPassword" />
+        <samples-json-errors [control]="registerForm.get('confirmPassword')"></samples-json-errors>
+      </div>
 
-      <input type="checkbox" id="acceptTerms" name="acceptTerms" formControlName="acceptTerms" />
-      <pre><code>{{registerForm.get('acceptTerms').errors | json}}</code></pre>
+      <div class="form-check">
+        <input type="checkbox" class="form-check-input" id="acceptTerms" formControlName="acceptTerms">
+        <label class="form-check-label" for="acceptTerms">Accept Terms</label>
+      </div>
+      <samples-json-errors [control]="registerForm.get('acceptTerms')"></samples-json-errors>
 
       <button type="submit">Register</button>
   </form>
 
-  <h3>Sandbox</h3>
+  <!-- <h3>Sandbox</h3>
   <form [formGroup]="sampleFormGroup">
     <input type="text" id="title" name="title" formControlName="title" />
     <pre><code>{{sampleFormGroup.get('title').errors | json}}</code></pre>
@@ -57,7 +67,7 @@
 
     <pre><code>{{sampleFormGroup.value | json}}</code></pre>
     
-  </form>
+  </form> -->
 </div>
 
 

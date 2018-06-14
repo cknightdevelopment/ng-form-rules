@@ -1,26 +1,32 @@
 # MVP
 
 ### Functionality
-- ~~add `FormArray` to existing form~~
-- ~~edit~~
-- ~~update subscriptions on adding FormArray item~~
-- add more tracing
-- ~~add tracing setting~~
-- ~~async edit~~
-- ~~empty the subscriptions array~~
+- smarter tracing
 
 ### Testing
 - reactive forms different scenarios
-- sample forms
 
 ### Dev Ops
-- ~~generate code coverage report~~
-- ~~add code coverage metrics to GitHub page~~
+- npm readme
+- npm license
+- tie npm to github
 
 ### Documentation
+- sample forms
+  - register
+  - contact
+  - order
+- readme
+  - installation
+  - dependencies
+  - getting started
+  - philosophy
+- jsdoc code comments
 
 ### Other
-- ~~turn into a library via CLI~~
+- license
+- blog post
+- video
 
 
 # Post MVP Ideas
@@ -28,4 +34,4 @@
   - skip pristine
   - skip untouched
 - view
-- list to all array items
+- listen to all array items

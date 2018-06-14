@@ -59,7 +59,7 @@ export class RulesEngineService {
 
         const deps = tests
             .map(t => this.getDependencyPropertiesFromTest(t))
-            .reduce((prev, current) => prev.concat(current));
+            .reduce((prev, current) => prev.concat(current), []);
 
         return this.commonSvc.unique(deps);
     }

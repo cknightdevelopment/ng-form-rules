@@ -58,7 +58,8 @@ export class BookModelSettings extends AbstractModelSettings<Book> {
             options: { dependencyProperties: ['favoriteBookSets.1.1.title'] } } }
         ];
         p.edit = [
-          { name: "has-title", check: { func: (book) => (book.pageCount || 0) < 100, options: {dependencyProperties: ['pageCount'] } } }
+          { name: "has-title", check: {
+            func: (book: Book) => (book.pageCount || 0) < 100, options: {dependencyProperties: ['pageCount'] } } }
         ];
       }),
       this.builder.property('pageCount', p => {

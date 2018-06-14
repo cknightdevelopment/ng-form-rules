@@ -5,10 +5,12 @@ import { AppComponent, BookModelSettings } from './app.component';
 import { FormRulesModule, MODEL_SETTINGS_TOKEN, TRACE_SETTINGS_TOKEN } from 'ng-form-rules';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RegisterModelSettings } from './models/register';
+import { JsonErrorsComponent } from './json-errors.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    JsonErrorsComponent
   ],
   imports: [
     BrowserModule,
