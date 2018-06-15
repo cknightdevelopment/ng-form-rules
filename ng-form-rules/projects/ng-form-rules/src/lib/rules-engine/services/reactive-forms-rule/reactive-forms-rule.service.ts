@@ -91,6 +91,16 @@ export class ReactiveFormsRuleService {
                 .patchValue(initialValue);
     }
 
+    extendValidator(control: AbstractControl, validator: ValidatorFn | ValidatorFn[]) {
+        const validatorArray = Array.isArray(validator) ? validator : [validator];
+        control.setValidators([control.validator,  ...validatorArray]);
+    }
+
+    extendAsyncValidator(control: AbstractControl, asyncValidator: AsyncValidatorFn | AsyncValidatorFn[]) {
+        const asyncValidatorArray = Array.isArray(asyncValidator) ? asyncValidator : [asyncValidator];
+        control.setAsyncValidators([control.asyncValidator,  ...asyncValidatorArray]);
+    }
+
     private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
         let control: AbstractControl;
 
@@ -99,8 +109,8 @@ export class ReactiveFormsRuleService {
         else control = this.buildControl(property, initialValue);
 
         // setup validation tests on value change
-        control.setValidators(this.buildValidatorFunction(property));
-        control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
+        control.setValidators([this.buildValidatorFunction(property)]);
+        control.setAsyncValidators([this.buildAsyncValidatorFunction(property)]);
 
         // setup edit tests on value change
         control.valueChanges.subscribe(value => {
@@ -344,7 +354,9 @@ export class ReactiveFormsRuleService {
 
     private buildTestResultStatsString<T>(testResults: TestResultsBase<T>) {
         return `Executed ${testResults.results.length} tests ` +
-            `(${testResults.passedResults.length} PASS | ${testResults.failedResults.length} FAIL)`;
+            `(${testResults.passedResults.length} PASS | ` +
+            `${testResults.failedResults.length} FAIL | `
+            + `${testResults.skippedResults.length} SKIP)`;
     }
 
     private attachModelSettingsToForm<T>(formGroup: FormGroup, modelSettings: AbstractModelSettings<T>) {

@@ -14,8 +14,43 @@ pre code {
 
 pre {
 	padding: 0.1em 0.5em 0.3em 0.7em;
-	border-left: 11px solid #ccc;
+	border-left-width: 11px;
+	border-left-style: solid;
 	margin: 1.7em 0 1.7em 0.3em;
 	overflow: auto;
 	width: 93%;
+}
+
+pre.errors {
+	border-left-color: #dc3545;
+	background-color: #f3f3f3;
+}
+
+
+input[disabled] {
+	cursor: not-allowed;
+}
+
+input.ng-valid {
+	border: 2px solid #28a745 !important;
+}
+
+input[type=checkbox].ng-valid+label {
+	color: #28a745 !important;
+}
+
+input.ng-invalid {
+	border: 2px solid #dc3545 !important;
+}
+
+input[type=checkbox].ng-invalid+label {
+	color: #dc3545 !important;
+}
+
+input.ng-pending {
+	border: 2px solid #ffc107 !important;
+}
+
+input[type=checkbox].ng-pending+label {
+	color: #ffc107 !important;
 }

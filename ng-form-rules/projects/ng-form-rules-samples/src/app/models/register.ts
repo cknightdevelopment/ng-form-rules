@@ -1,5 +1,6 @@
 import { AbstractModelSettings, Property } from "ng-form-rules";
 import { of } from "rxjs";
+import { delay } from "rxjs/operators";
 
 export class Register {
     username: string;
@@ -22,7 +23,7 @@ export class RegisterModelSettings extends AbstractModelSettings<Register> {
 
                 p.valid.push(this.builder.validTest(
                     'Username must be be unique',
-                    this.builder.ruleAsync(register => of(['chris'].indexOf(register.username) < 0)),
+                    this.builder.ruleAsync(register => of(['chris'].indexOf(register.username) < 0).pipe(delay(2000))),
                     this.builder.rule(register => !!register.username)));
             }),
             this.builder.property('password', p => {

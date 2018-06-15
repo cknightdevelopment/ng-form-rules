@@ -13,8 +13,8 @@ export abstract class AbstractModelSettings<T> {
     constructor(name: string) {
         this.builder = new ModelSettingsBuilder();
         this._name = name;
-        this.properties = this.buildPropertyRules() || [];
+        this.properties = this.buildProperties() || [];
     }
 
-    protected abstract buildPropertyRules(): Property<T>[];
+    protected abstract buildProperties(): Property<T>[];
 }

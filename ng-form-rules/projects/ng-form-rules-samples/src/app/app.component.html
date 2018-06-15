@@ -22,10 +22,14 @@
         <samples-json-errors [control]="registerForm.get('confirmPassword')"></samples-json-errors>
       </div>
 
-      <div class="form-check">
+      <div class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="acceptTerms" formControlName="acceptTerms">
+        <label class="custom-control-label" for="acceptTerms">Accept Terms</label>
+      </div>
+      <!-- <div class="form-check">
         <input type="checkbox" class="form-check-input" id="acceptTerms" formControlName="acceptTerms">
         <label class="form-check-label" for="acceptTerms">Accept Terms</label>
-      </div>
+      </div> -->
       <samples-json-errors [control]="registerForm.get('acceptTerms')"></samples-json-errors>
 
       <button type="submit">Register</button>

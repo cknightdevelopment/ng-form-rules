@@ -10,11 +10,15 @@ export class TestResultsBase<T> {
     }
 
     get passedResults(): TestResult<T>[] {
-        return this.results.filter(x => x.passed);
+        return this.results.filter(x => !!x.passed && !x.skipped);
     }
 
     get failedResults(): TestResult<T>[] {
         return this.results.filter(x => !x.passed);
+    }
+
+    get skippedResults(): TestResult<T>[] {
+        return this.results.filter(x => !!x.skipped);
     }
 
     get message(): string {

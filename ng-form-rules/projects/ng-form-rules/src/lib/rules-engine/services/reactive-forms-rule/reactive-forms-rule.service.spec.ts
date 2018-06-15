@@ -18,7 +18,7 @@ const validSettingsKey = 'validSettings';
 const editSettingsKey = 'editSettings';
 
 class PersonModelValidSettings extends AbstractModelSettings<Person> {
-    buildPropertyRules(): Property<Person>[] {
+    buildProperties(): Property<Person>[] {
         return [
             this.builder.property<Person>("age"),
             this.builder.property<Person>("nicknames", p => {
@@ -67,7 +67,7 @@ class PersonModelValidSettings extends AbstractModelSettings<Person> {
 }
 
 class PersonModelEditSettings extends AbstractModelSettings<Person> {
-    buildPropertyRules(): Property<Person>[] {
+    buildProperties(): Property<Person>[] {
         return [
             this.builder.property<Person>("age"),
             this.builder.property<Person>("nicknames", p => {

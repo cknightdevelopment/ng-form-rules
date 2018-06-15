@@ -13,6 +13,7 @@ import { UtilsModule } from '../../../utils/utils.module';
 import { of } from 'rxjs';
 import { Car } from '../../../test-utils/models/car';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
+import { ModelSettingsBuilder } from '../../../form-rules/helper/model-settings-builder';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -189,6 +190,26 @@ describe('RulesEngineService', () => {
                 svc.processRuleSetAsync({ name: "Whatever"}, null)
                     .subscribe(x => expect(x).toEqual(RuleSetResultType.Skipped));
             });
+
+            it('should process rule set with truthy "any" when first rule passes', () => {
+                const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[1].check;
+                svc.processRuleSetAsync({name: 'Chris'}, ruleSet)
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
+            });
+
+            it('should process rule set with truthy "any" when second rule passes', () => {
+                const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[1].check;
+                svc.processRuleSetAsync({name: 'Aubrey'}, ruleSet)
+                    .subscribe(x => {
+                        expect(x).toEqual(RuleSetResultType.Passed);
+                    });
+            });
+
+            it('should process rule set with truthy "any" when no rules pass', () => {
+                const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[1].check;
+                svc.processRuleSetAsync({name: 'Wrong Name'}, ruleSet)
+                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
+            });
         });
     });
 
@@ -212,9 +233,9 @@ describe('RulesEngineService', () => {
             });
 
             it('should handle rule where condition is not met', () => {
-                const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[2];
                 const result = svc.runTest({}, test);
-                expect(result).toBeFalsy();
+                expect(result).toEqual({ passed: true, skipped: true, message: null, name: "Condition never met" });
             });
         });
 
@@ -243,10 +264,11 @@ describe('RulesEngineService', () => {
             });
 
             it('should handle rule where condition is not met', () => {
-                const test = personModelSettings.properties.find(x => x.name == "name").valid[1];
+                const test = personModelSettings.properties.find(x => x.name == "name").valid[2];
                 svc.runTestAsync({}, test)
                     .subscribe(result => {
-                        expect(result).toBeFalsy();
+                        expect(result)
+                            .toEqual({ passed: true, skipped: true, message: null, name: "Condition never met" } as TestResult<Person>);
                     });
             });
         });
@@ -261,7 +283,8 @@ describe('RulesEngineService', () => {
                 expect(results.messages).toEqual([]);
                 expect(results.failedResults.length).toEqual(0);
                 expect(results.passedResults.length).toEqual(1);
-                expect(results.results.length).toEqual(1);
+                expect(results.skippedResults.length).toEqual(2);
+                expect(results.results.length).toEqual(3);
             });
 
             it('should handle failed tests', () => {
@@ -271,7 +294,8 @@ describe('RulesEngineService', () => {
                 expect(results.messages).toEqual(["Doesn't equal Chris"]);
                 expect(results.failedResults.length).toEqual(1);
                 expect(results.passedResults.length).toEqual(0);
-                expect(results.results.length).toEqual(1);
+                expect(results.skippedResults.length).toEqual(2);
+                expect(results.results.length).toEqual(3);
             });
 
             it('should handle when provided falsey tests', () => {
@@ -301,7 +325,8 @@ describe('RulesEngineService', () => {
                         expect(results.passed).toBeTruthy();
                         expect(results.messages).toEqual([]);
                         expect(results.failedResults.length).toEqual(0);
-                        expect(results.passedResults.length).toEqual(3);
+                        expect(results.passedResults.length).toEqual(2);
+                        expect(results.skippedResults.length).toEqual(1);
                         expect(results.results.length).toEqual(3);
                     });
             });
@@ -311,10 +336,11 @@ describe('RulesEngineService', () => {
                 svc.runTestsAsync({}, validTests)
                     .subscribe(results => {
                         expect(results.passed).toBeFalsy();
-                        expect(results.messages).toEqual(["Doesn't equal Chris"]);
-                        expect(results.failedResults.length).toEqual(1);
-                        expect(results.passedResults.length).toEqual(1);
-                        expect(results.results.length).toEqual(2);
+                        expect(results.messages).toEqual(["Doesn't equal Chris", "Doesn't equal Chris async only"]);
+                        expect(results.failedResults.length).toEqual(2);
+                        expect(results.passedResults.length).toEqual(0);
+                        expect(results.skippedResults.length).toEqual(1);
+                        expect(results.results.length).toEqual(3);
                     });
             });
 
@@ -480,7 +506,7 @@ describe('RulesEngineService', () => {
 });
 
 class PersonModelSettings extends AbstractModelSettings<Person> {
-    buildPropertyRules(): Property<Person>[] {
+    buildProperties(): Property<Person>[] {
         return [
             this.builder.property("name", p => {
                 p.valid = [
@@ -574,7 +600,7 @@ class PersonModelSettings extends AbstractModelSettings<Person> {
 }
 
 class AnyModelSettings extends AbstractModelSettings<Person> {
-    protected buildPropertyRules(): Property<Person>[] {
+    protected buildProperties(): Property<Person>[] {
         return [
             this.builder.property('name', p => {
                 p.valid = [
@@ -592,6 +618,21 @@ class AnyModelSettings extends AbstractModelSettings<Person> {
                                 }
                             ]
                         }
+                    },
+                    {
+                        name: "name async",
+                        message: "Name async must be Chris or Aubrey",
+                        check: {
+                            any: true,
+                            rules: [
+                                {
+                                    asyncFunc: (person) => of(person.name == "Chris")
+                                },
+                                {
+                                    asyncFunc: (person) => of(person.name == "Aubrey")
+                                }
+                            ]
+                        }
                     }
                 ];
             })
@@ -600,13 +641,13 @@ class AnyModelSettings extends AbstractModelSettings<Person> {
 }
 
 class NullModelSettings extends AbstractModelSettings<Person> {
-    protected buildPropertyRules(): Property<Person>[] {
+    protected buildProperties(): Property<Person>[] {
         return null;
     }
 }
 
 class EmptyModelSettings extends AbstractModelSettings<Person> {
-    protected buildPropertyRules(): Property<Person>[] {
+    protected buildProperties(): Property<Person>[] {
         return [];
     }
 }

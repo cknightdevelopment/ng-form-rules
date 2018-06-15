@@ -2,8 +2,10 @@
 
 ### Functionality
 - smarter tracing
+- adhoc add model settings (allow using services, etc.)
 
 ### Testing
+- extenders
 
 ### Dev Ops
 - npm readme
@@ -23,7 +25,6 @@
 - jsdoc code comments
 
 ### Other
-- license
 - blog post
 - video
 
