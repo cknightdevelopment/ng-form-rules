@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ReactiveFormsRuleService } from 'ng-form-rules';
 import { FormGroup } from '@angular/forms';
+import { UserService } from './services/user.service';
 
 @Component({
   selector: 'samples-root',

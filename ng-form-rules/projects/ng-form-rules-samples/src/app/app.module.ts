@@ -6,6 +6,7 @@ import { FormRulesModule, MODEL_SETTINGS_TOKEN, TRACE_SETTINGS_TOKEN } from 'ng-
 import { ReactiveFormsModule } from '@angular/forms';
 import { RegisterModelSettings } from './models/register';
 import { JsonErrorsComponent } from './json-errors.component';
+import { UserService } from './services/user.service';
 
 @NgModule({
   declarations: [
@@ -23,8 +24,9 @@ import { JsonErrorsComponent } from './json-errors.component';
       useValue: [
         new RegisterModelSettings('register')
       ]
-  },
-  { provide: TRACE_SETTINGS_TOKEN, useValue: true }
+    },
+    { provide: TRACE_SETTINGS_TOKEN, useValue: true },
+    UserService
   ],
   bootstrap: [AppComponent]
 })

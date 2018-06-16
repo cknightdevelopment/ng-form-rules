@@ -1,5 +1,6 @@
 import { ModelSettingsBuilder } from "../helper/model-settings-builder";
 import { Property } from "./property";
+import { AdhocModelSettings } from "./adhoc-model-settings";
 
 /**
  * Base class for ng-form-rules model settings
@@ -22,7 +23,7 @@ export abstract class AbstractModelSettings<T> {
     /**
      * Properties configured for the model settings
      */
-    readonly properties: Property<T>[];
+    properties: Property<T>[];
 
     /**
      * Creates model settings

@@ -31,11 +31,15 @@ export class RulesEngineService {
         this.modelSettings = {};
 
         settings.forEach(setting => {
-            this.traceSvc.trace(`Registering model settings "${setting.name}"`);
-            this.setPropertyAbsolutePaths(setting.properties);
-            this.setPropertyOwnerModelSettingsName(setting.name, setting.properties);
+            this.initializeModelSetting(setting);
             this.modelSettings[setting.name] = setting;
         });
+    }
+
+    initializeModelSetting(setting: AbstractModelSettings<any>) {
+        this.traceSvc.trace(`Initializing model settings "${setting.name}"`);
+        this.setPropertyAbsolutePaths(setting.properties);
+        this.setPropertyOwnerModelSettingsName(setting.name, setting.properties);
     }
 
     /**

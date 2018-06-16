@@ -10,7 +10,7 @@ export class Register {
 }
 
 export class RegisterModelSettings extends AbstractModelSettings<Register> {
-    protected buildPropertyRules(): Property<Register>[] {
+    protected buildProperties(): Property<Register>[] {
         return [
             this.builder.property('username', p => {
                 p.valid.push(this.builder.validTest(

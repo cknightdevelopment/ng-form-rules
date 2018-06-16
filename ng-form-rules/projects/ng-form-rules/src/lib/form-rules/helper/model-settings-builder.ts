@@ -7,32 +7,11 @@ import { RuleSet } from '../models/rule-set';
 import { RuleFunc } from '../models/rule-func';
 import { RuleOptions } from '../models/rule-options';
 import { AsyncRuleFunc } from '../models/async-rule-func';
-import { AbstractModelSettings } from '../models/abstract-model-settings';
-
-class DummyModelSettings extends AbstractModelSettings<any> {
-    constructor(name: string, b: () => Property<any>[]) {
-        super(name);
-        this.buildProperties = b;
-    }
-
-    protected buildProperties(): Property<any>[] {
-        return [];
-    }
-}
 
 /**
  * Utility class for building model settings
  */
 export class ModelSettingsBuilder {
-    /**
-     * Creates model settings
-     * @param propertyBuilder Function that builds properties for the model settings
-     * @returns Created model settings
-     */
-    static modelSettings<T>(propertyBuilder: () => Property<T>[]): AbstractModelSettings<T> {
-        return new DummyModelSettings('adhoc', propertyBuilder);
-    }
-
     /**
      * Creates a property
      * @param propertyName Property name

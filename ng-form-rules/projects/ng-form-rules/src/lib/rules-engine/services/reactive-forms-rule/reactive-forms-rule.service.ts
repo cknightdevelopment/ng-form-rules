@@ -34,18 +34,26 @@ export class ReactiveFormsRuleService {
 
     /**
      * Creates a form group using an instance of model settings
-     * @param modelSettingName Name of the model setting to use
+     * @param modelSettings Name of the model setting or an instance of model settings to use
      * @param initialValue Initial data to set the form values to
      * @returns Form group created according to defined model settings
      */
     createFormGroup(
-        modelSettingName: string,
+        modelSettings: string | AbstractModelSettings<any>,
         initialValue?: any
     ): FormGroup {
-        const settings = this.rulesEngineSvc.getModelSettings(modelSettingName);
-        if (!settings) throw new Error(`No model setting found with the name "${modelSettingName}"`);
+        let settings: AbstractModelSettings<any>;
 
-        this.traceSvc.trace(`Creating form group using model settings "${modelSettingName}"`);
+        if (typeof modelSettings === "string") {
+            settings = this.rulesEngineSvc.getModelSettings(modelSettings as string);
+            if (!settings) throw new Error(`No model setting found with the name "${modelSettings}"`);
+        } else {
+            if (!modelSettings) throw new Error(`Provided adhoc model setting are invalid"`);
+            settings = modelSettings as AbstractModelSettings<any>;
+            this.rulesEngineSvc.initializeModelSetting(settings);
+        }
+
+        this.traceSvc.trace(`Creating form group using model settings "${modelSettings}"`);
         const formGroup = this.buildGroup(settings.properties, initialValue);
 
         this.traceSvc.trace(`Setting up dependency subscriptions`);

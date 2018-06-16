@@ -2,9 +2,10 @@
 
 ### Functionality
 - smarter tracing
-- adhoc add model settings (allow using services, etc.)
 
 ### Testing
+- intialize settings
+- adhoc model settings
 
 ### Dev Ops
 - npm readme

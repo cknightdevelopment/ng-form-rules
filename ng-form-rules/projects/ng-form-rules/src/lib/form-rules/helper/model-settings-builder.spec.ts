@@ -1,6 +1,7 @@
 import { ModelSettingsBuilder } from './model-settings-builder';
 import { of } from 'rxjs';
 import { RuleSet } from '../models/rule-set';
+import { AdhocModelSettings } from '../models/adhoc-model-settings';
 
 describe('ModelSettingsBuilder', () => {
     const builder: ModelSettingsBuilder = new ModelSettingsBuilder();
@@ -171,6 +172,36 @@ describe('ModelSettingsBuilder', () => {
             expect(test.name).toEqual(name);
             expect(test.check).toBeTruthy();
             expect(test.condition).toBeTruthy();
+        });
+    });
+
+    describe('model settings', () => {
+        it('should create model settings with properties', () => {
+            const settings = AdhocModelSettings.create<TestModel>((b: ModelSettingsBuilder) => {
+                return [
+                    b.property('name'),
+                    b.property('age')
+                ];
+            });
+
+            expect(settings.name).toBeTruthy();
+            expect(settings.properties.length).toEqual(2);
+        });
+
+        it('should create model settings with empty properties when given falsey property builder function', () => {
+            const settings = AdhocModelSettings.create<TestModel>(null);
+
+            expect(settings.name).toBeTruthy();
+            expect(settings.properties.length).toEqual(0);
+        });
+
+        it('should create model settings with empty properties when property builder function return null', () => {
+            const settings = AdhocModelSettings.create<TestModel>((b) => {
+                return null;
+            });
+
+            expect(settings.name).toBeTruthy();
+            expect(settings.properties.length).toEqual(0);
         });
     });
 });

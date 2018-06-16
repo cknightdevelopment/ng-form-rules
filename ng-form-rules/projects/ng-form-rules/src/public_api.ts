@@ -35,6 +35,7 @@ export * from './lib/form-rules/models/test-result';
 export * from './lib/form-rules/models/test-results-base';
 export * from './lib/form-rules/models/test-run-state';
 export * from './lib/form-rules/models/test';
+export * from './lib/form-rules/models/adhoc-model-settings';
 
 // other
 export * from './lib/form-rules/helper/model-settings-builder';
