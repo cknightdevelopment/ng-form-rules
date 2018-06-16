@@ -1,6 +1,6 @@
 import { TestBed, ComponentFixture } from "@angular/core/testing";
 import { ReactiveFormsRuleService } from "./reactive-forms-rule.service";
-import { ReactiveFormsModule, FormArray, FormGroup } from "@angular/forms";
+import { ReactiveFormsModule, FormArray, FormGroup, Validators, AbstractControl, FormControl } from "@angular/forms";
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
 import { MODEL_SETTINGS_TOKEN } from "../../../form-rules/injection-tokens/model-settings.token";
 import { Person } from "../../../test-utils/models/person";
@@ -28,7 +28,7 @@ class PersonModelValidSettings extends AbstractModelSettings<Person> {
                             name: "Nickname items test",
                             check: {
                                 func: (x, root) => root.age == 100,
-                                options: { dependencyProperties: ["/age", "bad.dep.property.path", null, {bad: "path"} as any] }
+                                options: { dependencyProperties: ["/age", "bad.dep.property.path", null, { bad: "path" } as any] }
                             }
                         }
                     ];
@@ -77,7 +77,7 @@ class PersonModelEditSettings extends AbstractModelSettings<Person> {
                             name: "Nickname items test",
                             check: {
                                 func: (x, root) => root.age == 100,
-                                options: { dependencyProperties: ["/age", "bad.dep.property.path", null, {bad: "path"} as any] }
+                                options: { dependencyProperties: ["/age", "bad.dep.property.path", null, { bad: "path" } as any] }
                             }
                         }
                     ];
@@ -104,7 +104,7 @@ class PersonModelEditSettings extends AbstractModelSettings<Person> {
                     {
                         name: "Name test",
                         check: {
-                            func: x =>  x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                            func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
                             asyncFunc: (x, root) => of(root.age == 100),
                             options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
                         }
@@ -135,7 +135,7 @@ describe('ReactiveFormsRuleService', () => {
                         new PersonModelEditSettings(editSettingsKey)
                     ]
                 },
-                { provide: TRACE_SETTINGS_TOKEN, useValue: true }
+                { provide: TRACE_SETTINGS_TOKEN, useValue: false }
             ]
         });
 
@@ -375,6 +375,135 @@ describe('ReactiveFormsRuleService', () => {
 
             expect(nameControl.valid).toBeFalsy();
             expect(nameControl.errors).toBeTruthy();
+        });
+    });
+
+    describe('extend', () => {
+        let fg: FormGroup;
+        let nameControl: AbstractControl;
+        let ageControl: AbstractControl;
+
+        beforeEach(() => {
+            fg = svc.createFormGroup(validSettingsKey, validPerson);
+            nameControl = fg.get('name');
+            ageControl = fg.get('age');
+        });
+
+        describe('sync', () => {
+            it('should extend existing validator with single validator', () => {
+                svc.extendValidator(nameControl, Validators.required);
+
+                nameControl.setValue('');
+
+                expect(nameControl.errors.ngFormRules).toBeTruthy();
+                expect(nameControl.errors.required).toBeTruthy();
+            });
+
+            it('should extend existing validator with multiple validators', () => {
+                svc.extendValidator(nameControl, [Validators.maxLength(1), Validators.minLength(5)]);
+
+                nameControl.setValue('123');
+
+                expect(nameControl.errors.ngFormRules).toBeTruthy();
+                expect(nameControl.errors.maxlength).toBeTruthy();
+                expect(nameControl.errors.minlength).toBeTruthy();
+            });
+
+            it('should extend empty validator with single validator', () => {
+                svc.extendValidator(ageControl, Validators.required);
+
+                ageControl.setValue('');
+
+                expect(ageControl.errors.ngFormRules).toBeFalsy();
+                expect(ageControl.errors.required).toBeTruthy();
+            });
+
+            it('should extend empty validator with multiple validators', () => {
+                svc.extendValidator(ageControl, [Validators.max(1), Validators.min(5)]);
+
+                ageControl.setValue(3);
+
+                expect(ageControl.errors.ngFormRules).toBeFalsy();
+                expect(ageControl.errors.max).toBeTruthy();
+                expect(ageControl.errors.min).toBeTruthy();
+            });
+
+            it('should not throw exception when passed falsy validator', () => {
+                svc.extendValidator(nameControl, null);
+
+                nameControl.setValue('');
+
+                expect(nameControl.errors.ngFormRules).toBeTruthy();
+            });
+        });
+
+        describe('async', () => {
+            const customAsyncValidator1 = () => {
+                return (control: AbstractControl) => {
+                  return of({customAsyncValidator1: { passed: false }});
+                };
+            };
+
+            const customAsyncValidator2 = () => {
+                return (control: AbstractControl) => {
+                    return of({customAsyncValidator2: { passed: false }});
+                  };
+            };
+
+            beforeEach(() => {
+                // we need to do this because async validators won't run unless all sync validators pass.
+                // we are testing asyn stuff, just rule it out of the equation
+                nameControl.clearValidators();
+            });
+
+            it('should extend existing async validator with single async validator', () => {
+                svc.extendAsyncValidator(nameControl, customAsyncValidator1());
+
+                ageControl.setValue(0);
+                nameControl.patchValue(validPerson.name);
+
+                expect(nameControl.errors.ngFormRules).toBeTruthy();
+                expect(nameControl.errors.customAsyncValidator1).toBeTruthy();
+            });
+
+            it('should extend existing async validator with multiple async validators', () => {
+                svc.extendAsyncValidator(nameControl, [customAsyncValidator1(), customAsyncValidator2()]);
+
+                ageControl.setValue(0);
+                nameControl.patchValue(validPerson.name);
+
+                expect(nameControl.errors.ngFormRules).toBeTruthy();
+                expect(nameControl.errors.customAsyncValidator1).toBeTruthy();
+                expect(nameControl.errors.customAsyncValidator2).toBeTruthy();
+            });
+
+            it('should extend empty async validator with single async validator', () => {
+                svc.extendAsyncValidator(ageControl, customAsyncValidator1());
+
+                ageControl.setValue(0);
+
+                expect(ageControl.errors.ngFormRules).toBeFalsy();
+                expect(ageControl.errors.customAsyncValidator1).toBeTruthy();
+            });
+
+            it('should extend empty async validator with multiple async validators', () => {
+                svc.extendAsyncValidator(ageControl, [customAsyncValidator1(), customAsyncValidator2()]);
+
+                ageControl.setValue(0);
+
+                expect(ageControl.errors.ngFormRules).toBeFalsy();
+                expect(ageControl.errors.customAsyncValidator1).toBeTruthy();
+                expect(ageControl.errors.customAsyncValidator2).toBeTruthy();
+            });
+
+            it('should not throw exception when passed falsy async validator', () => {
+                svc.extendValidator(nameControl, null);
+
+                ageControl.setValue(0);
+                nameControl.patchValue(validPerson.name);
+
+                expect(nameControl.errors.ngFormRules).toBeTruthy();
+            });
         });
     });
 });

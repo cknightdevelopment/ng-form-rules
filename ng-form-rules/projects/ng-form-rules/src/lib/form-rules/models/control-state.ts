@@ -1,5 +1,8 @@
 import { AbstractControl } from "@angular/forms";
 
+/**
+ * State of an Angular AbstractControl at the time of running a test
+ */
 export class ControlState {
     private readonly _pristine: boolean;
     private readonly _untouched: boolean;

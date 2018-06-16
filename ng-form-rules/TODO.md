@@ -5,7 +5,6 @@
 - adhoc add model settings (allow using services, etc.)
 
 ### Testing
-- extenders
 
 ### Dev Ops
 - npm readme
