@@ -1,35 +1,56 @@
-<div style="text-align:center">
-  <h1>ng-form-rules</h1>
-</div>
 <div class="container-fluid">
-  <h3>Registration</h3>
-  <form [formGroup]="registerForm">
+  <div style="text-align:center">
+    <h1>ng-form-rules Samples</h1>
+  </div>
+
+  <div class="custom-control custom-checkbox">
+      <input type="checkbox" class="custom-control-input" id="showErrors" [(ngModel)]='showErrors'>
+      <label class="custom-control-label" for="showErrors">Display Errors</label>
+    </div>
+
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a class="nav-link" [ngClass]="{'active': activeSample == 'register'}" (click)="activeSample = 'register'" href="#">Register</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [ngClass]="{'active': activeSample == 'contact'}" (click)="activeSample = 'contact'" href="#">Contact</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [ngClass]="{'active': activeSample == 'order'}" (click)="activeSample = 'order'" href="#">Order</a>
+    </li>
+  </ul>
+
+  <div *ngIf="activeSample == 'register'">
+    <h3>Registration</h3>
+    <form [formGroup]="registerForm">
       <div class="form-group">
         <label for="username">Username</label>
         <input type="text" class="form-control" id="username" formControlName="username" />
-        <samples-json-errors [control]="registerForm.get('username')"></samples-json-errors>
+        <samples-json-errors [hidden]='!showErrors' [control]="registerForm.get('username')"></samples-json-errors>
       </div>
 
       <div class="form-group">
         <label for="password">Password</label>
         <input type="text" class="form-control" id="password" formControlName="password" />
-        <samples-json-errors [control]="registerForm.get('password')"></samples-json-errors>
+        <samples-json-errors [hidden]='!showErrors' [control]="registerForm.get('password')"></samples-json-errors>
       </div>
 
       <div class="form-group">
         <label for="confirmPassword">Confirm Password</label>
         <input type="text" class="form-control" id="confirmPassword" formControlName="confirmPassword" />
-        <samples-json-errors [control]="registerForm.get('confirmPassword')"></samples-json-errors>
+        <samples-json-errors [hidden]='!showErrors' [control]="registerForm.get('confirmPassword')"></samples-json-errors>
       </div>
 
       <div class="custom-control custom-checkbox">
         <input type="checkbox" class="custom-control-input" id="acceptTerms" formControlName="acceptTerms">
         <label class="custom-control-label" for="acceptTerms">Accept Terms</label>
       </div>
-      <samples-json-errors [control]="registerForm.get('acceptTerms')"></samples-json-errors>
+      <samples-json-errors [hidden]='!showErrors' [control]="registerForm.get('acceptTerms')"></samples-json-errors>
 
-      <button type="submit">Register</button>
-  </form>
+      <button class="btn btn-primary" type="submit">Register</button>
+    </form>
+  </div>
+
 
   <!-- <h3>Sandbox</h3>
   <form [formGroup]="sampleFormGroup">
@@ -69,5 +90,3 @@
     
   </form> -->
 </div>
-
-

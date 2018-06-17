@@ -48,12 +48,12 @@ export class ReactiveFormsRuleService {
             settings = this.rulesEngineSvc.getModelSettings(modelSettings as string);
             if (!settings) throw new Error(`No model setting found with the name "${modelSettings}"`);
         } else {
-            if (!modelSettings) throw new Error(`Provided adhoc model setting are invalid"`);
+            if (!modelSettings) throw new Error(`Adhoc model setting provided is invalid`);
             settings = modelSettings as AbstractModelSettings<any>;
             this.rulesEngineSvc.initializeModelSetting(settings);
         }
 
-        this.traceSvc.trace(`Creating form group using model settings "${modelSettings}"`);
+        this.traceSvc.trace(`Creating form group using model settings "${settings.name}"`);
         const formGroup = this.buildGroup(settings.properties, initialValue);
 
         this.traceSvc.trace(`Setting up dependency subscriptions`);
@@ -78,7 +78,7 @@ export class ReactiveFormsRuleService {
         property: ArrayItemProperty<T>,
         parentFormArray: FormArray,
         initialValue?: any,
-        index?: number
+        index?: number // TODO: make this an options model
     ): void {
         const control = this.buildAbstractControl(property, initialValue);
         const willBeLastItem = !this.commonSvc.isZeroOrGreater(index) || index >= parentFormArray.length;
@@ -91,7 +91,7 @@ export class ReactiveFormsRuleService {
         const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : index;
 
         const modelSettings = this.getModelSettingsFromForm(parentFormArray.root as FormGroup);
-        this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties, postAddIndex);
+        this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties);
 
         if (initialValue)
             parentFormArray

@@ -10,11 +10,15 @@ import { UserService } from './services/user.service';
 })
 export class AppComponent implements OnInit {
   registerForm: FormGroup;
+  activeSample: string;
+  showErrors = false;
 
   constructor(private svc: ReactiveFormsRuleService) {
   }
 
   ngOnInit(): void {
     this.registerForm = this.svc.createFormGroup('register');
+
+    this.activeSample = 'register';
   }
 }

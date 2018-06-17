@@ -11,6 +11,7 @@ import { Car } from "../../../test-utils/models/car";
 import { UtilsModule } from "../../../utils/utils.module";
 import { of } from "rxjs";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
+import { AdhocModelSettings } from "../../../form-rules/models/adhoc-model-settings";
 
 const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: "Subaru" }, nicknames: ["C-TOWN", "C"] };
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };
@@ -148,47 +149,101 @@ describe('ReactiveFormsRuleService', () => {
     });
 
     describe('create form group', () => {
-        it('should create form group according to model settings', () => {
-            const fg = svc.createFormGroup(validSettingsKey);
-            const value = fg.getRawValue();
-            expect(value).toEqual({
-                age: null,
-                name: null,
-                car: {
-                    make: null,
-                    year: null
-                },
-                nicknames: [null]
-            } as Person);
-        });
+        describe('registered model setting', () => {
+            it('should create form group according to model settings', () => {
+                const fg = svc.createFormGroup(validSettingsKey);
+                const value = fg.getRawValue();
+                expect(value).toEqual({
+                    age: null,
+                    name: null,
+                    car: {
+                        make: null,
+                        year: null
+                    },
+                    nicknames: [null]
+                } as Person);
+            });
 
-        it('should throw an error provided non-configured model settings name', () => {
-            expect(() => svc.createFormGroup('BAD NAME')).toThrowError(`No model setting found with the name "BAD NAME"`);
-        });
+            it('should throw an error provided non-configured model settings name', () => {
+                expect(() => svc.createFormGroup('BAD NAME')).toThrowError(`No model setting found with the name "BAD NAME"`);
+            });
 
-        it('should create form group with initial values', () => {
-            const fg = svc.createFormGroup(validSettingsKey, validPerson);
-            const value = fg.getRawValue();
-            expect(value).toEqual(validPerson);
-        });
+            it('should create form group with initial values', () => {
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
+                const value = fg.getRawValue();
+                expect(value).toEqual(validPerson);
+            });
 
-        it('should create form group as valid when given valid values', () => {
-            const fg = svc.createFormGroup(validSettingsKey, validPerson);
-            expect(fg.valid).toBeTruthy();
-        });
+            it('should create form group as valid when given valid values', () => {
+                const fg = svc.createFormGroup(validSettingsKey, validPerson);
+                expect(fg.valid).toBeTruthy();
+            });
 
-        it('should create form group as invalid when given invalid values', () => {
-            const fg = svc.createFormGroup(validSettingsKey, invalidPerson);
-            expect(fg.valid).toBeFalsy();
-        });
-
-        describe('async', () => {
             it('should create form group as invalid when given invalid values', () => {
-                const fg = svc.createFormGroup(validSettingsKey, Object.assign({}, validPerson, { age: 200 }));
-                const nameControl = fg.get('name');
+                const fg = svc.createFormGroup(validSettingsKey, invalidPerson);
+                expect(fg.valid).toBeFalsy();
+            });
 
-                expect(nameControl.valid).toBeFalsy();
-                expect(nameControl.errors).toBeTruthy();
+            describe('async', () => {
+                it('should create form group as invalid when given invalid values', () => {
+                    const fg = svc.createFormGroup(validSettingsKey, Object.assign({}, validPerson, { age: 200 }));
+                    const nameControl = fg.get('name');
+
+                    expect(nameControl.valid).toBeFalsy();
+                    expect(nameControl.errors).toBeTruthy();
+                });
+            });
+        });
+
+        describe('adhoc model setting', () => {
+            const adhocModelSettings = AdhocModelSettings.create<Person>(builder => {
+                return [
+                    builder.property('name', p => {
+                        p.valid.push(builder.validTest('Boo!', builder.rule(person => !!person.name)));
+                    }),
+                    builder.property('age', p => {
+                        p.valid.push(builder.validTest('Boo async!', builder.ruleAsync(person => of(!!person.age))));
+                    }),
+                ];
+            });
+
+            it('should create form group according to model settings', () => {
+                const fg = svc.createFormGroup(adhocModelSettings);
+                const value = fg.getRawValue();
+                expect(value).toEqual({
+                    age: null,
+                    name: null
+                } as Person);
+            });
+
+            it('should throw an error provided falsey model settings', () => {
+                expect(() => svc.createFormGroup(null)).toThrowError(`Adhoc model setting provided is invalid`);
+            });
+
+            it('should create form group with initial values', () => {
+                const fg = svc.createFormGroup(adhocModelSettings, { name: 'Chris', age: 30 });
+                const value = fg.getRawValue();
+                expect(value).toEqual({ name: 'Chris', age: 30 });
+            });
+
+            it('should create form group as valid when given valid values', () => {
+                const fg = svc.createFormGroup(adhocModelSettings, { name: 'Chris', age: 30 });
+                expect(fg.valid).toBeTruthy();
+            });
+
+            it('should create form group as invalid when given invalid values', () => {
+                const fg = svc.createFormGroup(adhocModelSettings, { name: '', age: 30 });
+                expect(fg.valid).toBeFalsy();
+            });
+
+            describe('async', () => {
+                it('should create form group as invalid when given invalid values', () => {
+                    const fg = svc.createFormGroup(adhocModelSettings, { name: 'Chris', age: 0 });
+                    const ageControl = fg.get('age');
+
+                    expect(ageControl.valid).toBeFalsy();
+                    expect(ageControl.errors).toBeTruthy();
+                });
             });
         });
     });

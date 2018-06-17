@@ -3,7 +3,7 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { FormRulesModule, MODEL_SETTINGS_TOKEN, TRACE_SETTINGS_TOKEN } from 'ng-form-rules';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RegisterModelSettings } from './models/register';
 import { JsonErrorsComponent } from './json-errors.component';
 import { UserService } from './services/user.service';
@@ -16,7 +16,8 @@ import { UserService } from './services/user.service';
   imports: [
     BrowserModule,
     ReactiveFormsModule,
-    FormRulesModule
+    FormRulesModule,
+    FormsModule
   ],
   providers: [
     {

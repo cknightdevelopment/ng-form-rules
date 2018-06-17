@@ -1,6 +1,6 @@
 import { TestBed, inject } from '@angular/core/testing';
 
-import { RulesEngineService, RuleSetResultType } from './rules-engine.service';
+import { RulesEngineService } from './rules-engine.service';
 import { MODEL_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/model-settings.token';
 import { AbstractModelSettings } from '../../../form-rules/models/abstract-model-settings';
 import { Property } from '../../../form-rules/models/property';
@@ -13,7 +13,7 @@ import { UtilsModule } from '../../../utils/utils.module';
 import { of } from 'rxjs';
 import { Car } from '../../../test-utils/models/car';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
-import { ModelSettingsBuilder } from '../../../form-rules/helper/model-settings-builder';
+import { ProcessResultType } from '../../../form-rules/models/proccess-result-type';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -71,6 +71,26 @@ describe('RulesEngineService', () => {
             expect(personModelSettings.properties.map(x => x.name)).toEqual(["name", "age", "car", "nicknames"]);
         });
 
+        it('should handle property settings with properties set to null', () => {
+            const emptyModelSettings = svc.getModelSettings<Person>("null");
+            expect(emptyModelSettings).toBeTruthy();
+            expect(emptyModelSettings.properties).toEqual([]);
+        });
+
+        it('should handle property settings with properties set to an empty array', () => {
+            const emptyModelSettings = svc.getModelSettings<Person>("empty");
+            expect(emptyModelSettings).toBeTruthy();
+            expect(emptyModelSettings.properties).toEqual([]);
+        });
+
+        it('should handle rogue model settings', () => {
+            const rogueModelSettings = svc.getModelSettings<any>("rogue");
+            expect(rogueModelSettings).toBeTruthy();
+            expect(rogueModelSettings.properties).toBeUndefined();
+        });
+    });
+
+    describe('initialize model settings', () => {
         it('should set absolute paths for properties configured in model settings', () => {
             expect(personModelSettings.properties.find(p => p.name == "name").absolutePath).toEqual('name');
             expect(personModelSettings.properties.find(p => p.name == "age").absolutePath).toEqual('age');
@@ -96,66 +116,48 @@ describe('RulesEngineService', () => {
                 .filter(p => p.ownerModelSettingsName == "person").length;
             expect(personModelSettings.properties.length).toEqual(propertyWithOwnerSetCount);
         });
-
-        it('should handle property settings with properties set to null', () => {
-            const emptyModelSettings = svc.getModelSettings<Person>("null");
-            expect(emptyModelSettings).toBeTruthy();
-            expect(emptyModelSettings.properties).toEqual([]);
-        });
-
-        it('should handle property settings with properties set to an empty array', () => {
-            const emptyModelSettings = svc.getModelSettings<Person>("empty");
-            expect(emptyModelSettings).toBeTruthy();
-            expect(emptyModelSettings.properties).toEqual([]);
-        });
-
-        it('should handle rogue model settings', () => {
-            const rogueModelSettings = svc.getModelSettings<any>("rogue");
-            expect(rogueModelSettings).toBeTruthy();
-            expect(rogueModelSettings.properties).toBeUndefined();
-        });
     });
 
     describe('rule set processing', () => {
         describe('sync', () => {
             it('should process rule group', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
-                expect(svc.processRuleSet(validPerson, ruleGroup)).toEqual(RuleSetResultType.Passed);
-                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toEqual(RuleSetResultType.Failed);
+                expect(svc.processRuleSet(validPerson, ruleGroup)).toEqual(ProcessResultType.Passed);
+                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toEqual(ProcessResultType.Failed);
             });
 
             it('should process rule', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
-                expect(svc.processRuleSet(validPerson, ruleGroup)).toEqual(RuleSetResultType.Passed);
-                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toEqual(RuleSetResultType.Failed);
+                expect(svc.processRuleSet(validPerson, ruleGroup)).toEqual(ProcessResultType.Passed);
+                expect(svc.processRuleSet(invalidPerson, ruleGroup)).toEqual(ProcessResultType.Failed);
             });
 
             it('should process rule using root data', () => {
                 const rule = { func: (x, root) => root.a === 1 } as Rule<any>;
-                expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toEqual(RuleSetResultType.Passed);
-                expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toEqual(RuleSetResultType.Failed);
+                expect(svc.processRuleSet({}, rule, { rootData: { a: 1 } })).toEqual(ProcessResultType.Passed);
+                expect(svc.processRuleSet(invalidPerson, rule, { rootData: { a: 0 } })).toEqual(ProcessResultType.Failed);
             });
 
             it('should process falsey rule and return positive', () => {
-                expect(svc.processRuleSet({ name: "Whatever"}, null)).toEqual(RuleSetResultType.Skipped);
+                expect(svc.processRuleSet({ name: "Whatever"}, null)).toEqual(ProcessResultType.Skipped);
             });
 
             it('should process rule set with truthy "any" when first rule passes', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 const result = svc.processRuleSet({name: 'Chris'}, ruleSet);
-                expect(result).toEqual(RuleSetResultType.Passed);
+                expect(result).toEqual(ProcessResultType.Passed);
             });
 
             it('should process rule set with truthy "any" when second rule passes', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 const result = svc.processRuleSet({name: 'Aubrey'}, ruleSet);
-                expect(result).toEqual(RuleSetResultType.Passed);
+                expect(result).toEqual(ProcessResultType.Passed);
             });
 
             it('should process rule set with truthy "any" when no rules pass', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 const result = svc.processRuleSet({name: 'Wrong Name'}, ruleSet);
-                expect(result).toEqual(RuleSetResultType.Failed);
+                expect(result).toEqual(ProcessResultType.Failed);
             });
         });
 
@@ -163,52 +165,52 @@ describe('RulesEngineService', () => {
             it('should process rule group', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "name").valid[0].check;
                 svc.processRuleSetAsync(validPerson, ruleGroup)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Passed));
                 svc.processRuleSetAsync(invalidPerson, ruleGroup)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Failed));
             });
 
             it('should process rule', () => {
                 const ruleGroup = personModelSettings.properties.find(x => x.name == "age").valid[0].check;
 
                 svc.processRuleSetAsync(validPerson, ruleGroup)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Passed));
                 svc.processRuleSetAsync(invalidPerson, ruleGroup)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Failed));
             });
 
             it('should process rule using root data', () => {
                 const rule = { asyncFunc: (x, root) => of(root.a === 1) } as Rule<any>;
 
                 svc.processRuleSetAsync({}, rule, { rootData: { a: 1 } })
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Passed));
                 svc.processRuleSetAsync({}, rule, { rootData: { a: 0 } })
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Failed));
             });
 
             it('should process falsey rule and return positive', () => {
                 svc.processRuleSetAsync({ name: "Whatever"}, null)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Skipped));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Skipped));
             });
 
             it('should process rule set with truthy "any" when first rule passes', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[1].check;
                 svc.processRuleSetAsync({name: 'Chris'}, ruleSet)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Passed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Passed));
             });
 
             it('should process rule set with truthy "any" when second rule passes', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[1].check;
                 svc.processRuleSetAsync({name: 'Aubrey'}, ruleSet)
                     .subscribe(x => {
-                        expect(x).toEqual(RuleSetResultType.Passed);
+                        expect(x).toEqual(ProcessResultType.Passed);
                     });
             });
 
             it('should process rule set with truthy "any" when no rules pass', () => {
                 const ruleSet = anyModelSettings.properties.find(x => x.name == "name").valid[1].check;
                 svc.processRuleSetAsync({name: 'Wrong Name'}, ruleSet)
-                    .subscribe(x => expect(x).toEqual(RuleSetResultType.Failed));
+                    .subscribe(x => expect(x).toEqual(ProcessResultType.Failed));
             });
         });
     });

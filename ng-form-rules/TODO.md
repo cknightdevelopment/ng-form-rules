@@ -1,11 +1,10 @@
 # MVP
 
 ### Functionality
+- improve aip experience
 - smarter tracing
 
 ### Testing
-- intialize settings
-- adhoc model settings
 
 ### Dev Ops
 - npm readme
@@ -22,6 +21,7 @@
   - dependencies
   - getting started
   - philosophy
+  - not _locked in_
 - jsdoc code comments
 
 ### Other
@@ -35,3 +35,4 @@
   - skip untouched
 - view
 - listen to all array items
+- allow non-root form group
