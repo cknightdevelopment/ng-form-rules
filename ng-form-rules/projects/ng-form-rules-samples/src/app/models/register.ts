@@ -22,7 +22,7 @@ export class RegisterModelSettings extends AbstractModelSettings<Register> {
                     this.builder.rule(register => (register.username || "").length >= 5 && (register.username || "").length <= 15)));
 
                 p.valid.push(this.builder.validTest(
-                    'Username must be be unique',
+                    'Username must be unique',
                     this.builder.ruleAsync(register => of(['chris'].indexOf(register.username) < 0).pipe(delay(2000))),
                     this.builder.rule(register => !!register.username)));
             }),

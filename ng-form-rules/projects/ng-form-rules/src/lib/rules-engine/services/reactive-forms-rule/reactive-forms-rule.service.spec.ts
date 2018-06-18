@@ -52,16 +52,18 @@ class PersonModelValidSettings extends AbstractModelSettings<Person> {
                 ];
             }),
             this.builder.property<Person>("name", p => {
-                p.valid = [
-                    {
-                        message: "Name messsage",
-                        check: {
-                            func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
-                            asyncFunc: (x, root) => of(root.age == 100),
-                            options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
-                        }
-                    }
-                ];
+                p.valid.push(this.builder.validTest(
+                    'Name messsage sync',
+                    this.builder.rule(x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
+                        { dependencyProperties: ["./age", "car.make", "nicknames.0"]}
+                    )
+                ));
+                p.valid.push(this.builder.validTest(
+                    'Name messsage async',
+                    this.builder.ruleAsync<Person, Person>((x, root) => of(root.age == 100),
+                        { dependencyProperties: ["./age"]}
+                    )
+                ));
             })
         ];
     }
@@ -136,7 +138,7 @@ describe('ReactiveFormsRuleService', () => {
                         new PersonModelEditSettings(editSettingsKey)
                     ]
                 },
-                { provide: TRACE_SETTINGS_TOKEN, useValue: false }
+                { provide: TRACE_SETTINGS_TOKEN, useValue: true }
             ]
         });
 

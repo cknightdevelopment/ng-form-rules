@@ -14,6 +14,9 @@ import { of } from 'rxjs';
 import { Car } from '../../../test-utils/models/car';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { ProcessResultType } from '../../../form-rules/models/proccess-result-type';
+import { AdhocModelSettings } from '../../../form-rules/models/adhoc-model-settings';
+import { ModelSettingsBuilder } from '../../../form-rules/helper/model-settings-builder';
+import { async } from 'q';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };
@@ -475,6 +478,62 @@ describe('RulesEngineService', () => {
 
             expect(result.length).toEqual(4);
             expect(result).toEqual(["a", "b", "c", "d"]);
+        });
+    });
+
+    describe('group tests by sync type', () => {
+        const builder = new ModelSettingsBuilder();
+        const syncRule = builder.rule(x => !!x);
+        const asyncRule = builder.ruleAsync(x => of(!!x));
+
+        it('should group single sync test', () => {
+            const tests = [
+                builder.validTest('test1', syncRule)
+            ];
+            const results = svc.groupTestsBySyncType(tests);
+            expect(results.sync.length).toEqual(1);
+            expect(results.async.length).toEqual(0);
+        });
+
+        it('should group single async test', () => {
+            const tests = [
+                builder.validTest('test1', asyncRule)
+            ];
+            const results = svc.groupTestsBySyncType(tests);
+            expect(results.sync.length).toEqual(0);
+            expect(results.async.length).toEqual(1);
+        });
+
+        it('should group sync and async test', () => {
+            const tests = [
+                builder.validTest('test1', syncRule),
+                builder.validTest('test2', asyncRule)
+            ];
+            const results = svc.groupTestsBySyncType(tests);
+            expect(results.sync.length).toEqual(1);
+            expect(results.async.length).toEqual(1);
+        });
+
+        it('should group as async when async rule exists in the test', () => {
+            const tests = [
+                builder.validTest('test1', syncRule, asyncRule),
+            ];
+            const results = svc.groupTestsBySyncType(tests);
+            expect(results.sync.length).toEqual(0);
+            expect(results.async.length).toEqual(1);
+        });
+
+        it('should group empty test array', () => {
+            const tests = [];
+            const results = svc.groupTestsBySyncType(tests);
+            expect(results.sync.length).toEqual(0);
+            expect(results.async.length).toEqual(0);
+        });
+
+        it('should group null test array', () => {
+            const results = svc.groupTestsBySyncType(null);
+            expect(results.sync.length).toEqual(0);
+            expect(results.async.length).toEqual(0);
         });
     });
 

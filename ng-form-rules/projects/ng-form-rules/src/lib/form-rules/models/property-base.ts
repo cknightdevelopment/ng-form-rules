@@ -11,6 +11,11 @@ export abstract class PropertyBase<T> {
     private _dependencyPropertySubscriptions: Subscription[] = [];
     private _ownerModelSettingsName: string;
 
+    // asyncOptions: {
+    //     distinctUntilChanged?: boolean,
+    //     debounceMilliseconds?: number
+    // } = { distinctUntilChanged: true, debounceMilliseconds: 1000 };
+
     /**
      * Validation tests
      */

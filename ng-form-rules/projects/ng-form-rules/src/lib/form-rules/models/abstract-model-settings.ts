@@ -1,6 +1,5 @@
 import { ModelSettingsBuilder } from "../helper/model-settings-builder";
 import { Property } from "./property";
-import { AdhocModelSettings } from "./adhoc-model-settings";
 
 /**
  * Base class for ng-form-rules model settings

@@ -7,6 +7,7 @@ import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { RegisterModelSettings } from './models/register';
 import { JsonErrorsComponent } from './json-errors.component';
 import { UserService } from './services/user.service';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { UserService } from './services/user.service';
     BrowserModule,
     ReactiveFormsModule,
     FormRulesModule,
-    FormsModule
+    FormsModule,
+    HttpClientModule
   ],
   providers: [
     {

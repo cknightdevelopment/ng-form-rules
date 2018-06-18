@@ -2,9 +2,10 @@
 
 ### Functionality
 - improve aip experience
-- smarter tracing
+- debounce and distinct for async
 
 ### Testing
+- 
 
 ### Dev Ops
 - npm readme

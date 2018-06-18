@@ -18,6 +18,9 @@
     <li class="nav-item">
       <a class="nav-link" [ngClass]="{'active': activeSample == 'order'}" (click)="activeSample = 'order'" href="#">Order</a>
     </li>
+    <li class="nav-item">
+      <a class="nav-link" [ngClass]="{'active': activeSample == 'adhoc'}" (click)="activeSample = 'adhoc'" href="#">Adhoc</a>
+    </li>
   </ul>
 
   <div *ngIf="activeSample == 'register'">
@@ -51,6 +54,22 @@
     </form>
   </div>
 
+  <div *ngIf="activeSample == 'adhoc'">
+    <h3>Adhoc</h3>
+    <form [formGroup]="adhocForm">
+      <div class="form-group">
+        <label for="repositoryName">Repository Name</label>
+        <input type="text" class="form-control" id="repositoryName" formControlName="repositoryName" />
+        <samples-json-errors [hidden]='!showErrors' [control]="adhocForm.get('repositoryName')"></samples-json-errors>
+      </div>
+
+      <div class="form-group">
+        <label for="random">Random</label>
+        <input type="text" class="form-control" id="random" formControlName="random" />
+        <samples-json-errors [hidden]='!showErrors' [control]="adhocForm.get('random')"></samples-json-errors>
+      </div>
+    </form>
+  </div>
 
   <!-- <h3>Sandbox</h3>
   <form [formGroup]="sampleFormGroup">

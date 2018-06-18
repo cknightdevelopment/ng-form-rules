@@ -16,6 +16,7 @@ import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { PropertyTestResults } from '../../../form-rules/models/property-test-result';
 import { PropertyBase } from '../../../form-rules/models/property-base';
 import { ProcessResultType } from '../../../form-rules/models/proccess-result-type';
+import { TestSyncGroups } from '../../../form-rules/models/test-sync-groups';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -76,6 +77,39 @@ export class RulesEngineService {
             .reduce((prev, current) => prev.concat(current), []);
 
         return this.commonSvc.unique(deps);
+    }
+
+    /**
+     * Gets tests grouped by their sync type (e.g. sync vs. async)
+     * @param tests Test to groups
+     * @returns Tests grouped by sync type
+     */
+    groupTestsBySyncType<T>(tests: Test<T>[]): TestSyncGroups<T> {
+        const testGroups = {
+            sync: [],
+            async: []
+        } as TestSyncGroups<T>;
+
+        if (!tests) return testGroups;
+
+        tests.forEach(test => {
+            const testFuncTypes = {
+                sync: false,
+                async: false
+            } as ConfiguredFuncTypes;
+
+            const conditionResults = this.getConfiguredFuncTypes(test.condition);
+            const checkResults = this.getConfiguredFuncTypes(test.check);
+
+            testFuncTypes.sync = conditionResults.sync || checkResults.sync;
+            testFuncTypes.async = conditionResults.async || checkResults.async;
+
+            // if there is an async func anywhere in the test's rule sets, then it is considered an async test
+            if (testFuncTypes.sync && !testFuncTypes.async) testGroups.sync.push(test);
+            if (testFuncTypes.async) testGroups.async.push(test);
+        });
+
+        return testGroups;
     }
 
     /**
@@ -408,4 +442,34 @@ export class RulesEngineService {
             }
         });
     }
+
+    private getConfiguredFuncTypes<T>(ruleSet: RuleSet<T>): ConfiguredFuncTypes {
+        if (!ruleSet) return { sync: false, async: false };
+
+        const isRuleGroup = this.isRuleGroup(ruleSet);
+
+        if (isRuleGroup) {
+            const ruleGroup = ruleSet as RuleGroup<T>;
+            const results = ruleGroup.rules
+                .map(rs => {
+                    return this.getConfiguredFuncTypes(rs);
+                });
+
+            return {
+                sync: results.findIndex(x => !!x.sync) >= 0,
+                async: results.findIndex(x => !!x.async) >= 0,
+            };
+        } else {
+            const rule = ruleSet as Rule<T>;
+            return {
+                sync: !!rule.func,
+                async: !!rule.asyncFunc
+            };
+        }
+    }
+}
+
+interface ConfiguredFuncTypes {
+    sync: boolean;
+    async: boolean;
 }

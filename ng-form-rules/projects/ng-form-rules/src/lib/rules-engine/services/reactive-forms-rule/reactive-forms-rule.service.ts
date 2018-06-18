@@ -6,8 +6,8 @@ import { Property } from "../../../form-rules/models/property";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { TraceService } from "../../../utils/trace/trace.service";
-import { Observable } from "rxjs";
-import { map, tap } from "rxjs/operators";
+import { Observable, BehaviorSubject, of } from "rxjs";
+import { map, tap, switchMap, debounceTime, take, distinctUntilChanged, distinctUntilKeyChanged, filter, windowTime, timeInterval } from "rxjs/operators";
 import { TestResultsBase } from "../../../form-rules/models/test-results-base";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
 import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";
@@ -108,7 +108,8 @@ export class ReactiveFormsRuleService {
         if (!validator) return;
 
         const validatorArray = Array.isArray(validator) ? validator : [validator];
-        control.setValidators([control.validator,  ...validatorArray]);
+        control.setValidators([control.validator,  ...validatorArray]
+            .filter(validatorFn => !!validatorFn));
     }
 
     /**
@@ -120,7 +121,8 @@ export class ReactiveFormsRuleService {
         if (!asyncValidator) return;
 
         const asyncValidatorArray = Array.isArray(asyncValidator) ? asyncValidator : [asyncValidator];
-        control.setAsyncValidators([control.asyncValidator,  ...asyncValidatorArray]);
+        control.setAsyncValidators([control.asyncValidator,  ...asyncValidatorArray]
+            .filter(asyncValidatorFn => !!asyncValidatorFn));
     }
 
     private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
@@ -128,11 +130,11 @@ export class ReactiveFormsRuleService {
 
         if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, initialValue);
         else if (property.properties) control = this.buildGroup(property.properties, initialValue);
-        else control = this.buildControl(property, initialValue);
+        else control = this.buildControl(initialValue);
 
         // setup validation tests on value change
-        control.setValidators([this.buildValidatorFunction(property)]);
-        control.setAsyncValidators([this.buildAsyncValidatorFunction(property)]);
+        control.setValidators(this.buildValidatorFunction(property));
+        control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
 
         // setup edit tests on value change
         control.valueChanges.subscribe(value => {
@@ -142,7 +144,7 @@ export class ReactiveFormsRuleService {
         return control;
     }
 
-    private buildControl<T>(property: PropertyBase<T>, initialValue?: any): FormControl {
+    private buildControl<T>(initialValue?: any): FormControl {
         return this.formBuilder.control(initialValue || null);
     }
 
@@ -165,11 +167,14 @@ export class ReactiveFormsRuleService {
     }
 
     private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
+        const hhh = this.rulesEngineSvc.groupTestsBySyncType(property.valid);
+        if (!hhh.sync.length) return null;
+
         return (control: AbstractControl): ValidationErrors => {
             const controlContextValues = this.getControlContextValues(control, property);
 
             const testResults = this.rulesEngineSvc
-                .runTests(controlContextValues.relative, property.valid, {
+                .runTests(controlContextValues.relative, hhh.sync, {
                     rootData: controlContextValues.root,
                     controlState: ControlState.create(control)
                 });
@@ -184,10 +189,42 @@ export class ReactiveFormsRuleService {
     }
 
     private buildAsyncValidatorFunction<T>(property: PropertyBase<T>): AsyncValidatorFn {
-        return (control: AbstractControl): Promise<ValidationErrors | null> | Observable<ValidationErrors | null> => {
+        const rawAsyncFunc = this.buildAsyncValidatorFunctionRaw(property);
+
+        if (!rawAsyncFunc) return null;
+
+        const values = new BehaviorSubject<AbstractControl>(null);
+        // let lastValue: any;
+        const valid$ = values.pipe(
+            // debounceTime(property.asyncOptions.debounceMilliseconds || 0),
+            // map((control) => ({
+            //     control: control,
+            //     passthrough: !!property.asyncOptions.distinctUntilChanged && control.value === lastValue
+            // })),
+            // tap((x) => {
+            //     if (!x.passthrough) lastValue = x.control.value;
+            // }),
+            // switchMap(x => {
+            //     return x.passthrough ? of(null) : rawAsyncFunc(x.control);
+            // }),
+            switchMap(x => rawAsyncFunc(x)),
+            take(1)
+        );
+
+        return (control: AbstractControl): Promise<ValidationErrors> | Observable<ValidationErrors> => {
+            values.next(control);
+            return valid$;
+        };
+    }
+
+    private buildAsyncValidatorFunctionRaw<T>(property: PropertyBase<T>): AsyncValidatorFn {
+        const hhh = this.rulesEngineSvc.groupTestsBySyncType(property.valid);
+        if (!hhh.async.length) return null;
+
+        return (control: AbstractControl) => {
             const controlContextValues = this.getControlContextValues(control, property);
 
-            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, property.valid, {
+            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, hhh.async, {
                 rootData: controlContextValues.root,
                 controlState: ControlState.create(control)
             }).pipe(
