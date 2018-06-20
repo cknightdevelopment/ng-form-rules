@@ -7,9 +7,6 @@
 - debounce and distinct
 
 ### Dev Ops
-- npm readme
-- npm license
-- tie npm to github
 
 ### Documentation
 - sample forms
