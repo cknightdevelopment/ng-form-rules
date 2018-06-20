@@ -25,8 +25,12 @@ export class AppComponent implements OnInit {
     const adhocModelSettings = AdhocModelSettings.create<any>(builder => {
       return [
         builder.property('repositoryName', p => {
-          p.valid.push(builder.validTest('Repo exists',
-            builder.ruleAsync(y => this.userSvc.callGitHub().pipe(map(x => !!x)))));
+          p.valueChangeOptions.self.asyncValid = { distinctUntilChanged: true, debounceMilliseconds: 2000 };
+          p.valid.push(builder.validTest('No repositories found',
+            builder.ruleAsync(
+              y => this.userSvc.callGitHub(y.repositoryName).pipe(map(x => !!x)), {dependencyProperties: ['random']}),
+            builder.rule(y => !!y.repositoryName && y.repositoryName.length >= 3)
+          ));
         }),
         builder.property('random')
       ];

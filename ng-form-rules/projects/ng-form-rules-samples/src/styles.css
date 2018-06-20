@@ -54,3 +54,7 @@ input.ng-pending {
 input[type=checkbox].ng-pending+label {
 	color: #ffc107 !important;
 }
+
+input[type=checkbox].no-validation+label {
+	color: inherit !important;
+}

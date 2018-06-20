@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable, of } from "rxjs";
-import { delay, tap } from "rxjs/operators";
+import { delay, tap, map } from "rxjs/operators";
 
 @Injectable()
 export class UserService {
@@ -10,8 +10,8 @@ export class UserService {
     constructor(private http: HttpClient) {
     }
 
-    callGitHub(): Observable<Object> {
-        return this.http.get('https://api.github.com/repositories');
+    callGitHub(name: string): Observable<Object> {
+        return this.http.get<any>(`https://api.github.com/search/repositories?q=${name}`).pipe(map(x => !!x.items.length));
     }
 
     doesUsernameAlreadyExist(username: string): boolean {

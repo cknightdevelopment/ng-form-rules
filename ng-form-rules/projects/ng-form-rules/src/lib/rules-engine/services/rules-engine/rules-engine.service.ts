@@ -344,34 +344,38 @@ export class RulesEngineService {
     }
 
     private processRule<T>(data: T, rule: Rule<T>, state?: TestRunState): ProcessResultType {
-        if (!this.doProcessRule(rule, state, false)) return ProcessResultType.Skipped;
+        if (!rule.func) return ProcessResultType.Skipped;
 
         const rootData = state ? state.rootData : null;
         return rule.func(data, rootData) ? ProcessResultType.Passed : ProcessResultType.Failed;
     }
 
     private processRuleAsync<T>(data: T, rule: Rule<T>, state?: TestRunState): Observable<ProcessResultType> {
-        if (!this.doProcessRule(rule, state, true)) return of(ProcessResultType.Skipped);
+        if (!rule.func && !rule.asyncFunc) return of(ProcessResultType.Skipped);
 
         const rootData = state ? state.rootData : null;
-        return rule.asyncFunc(data, rootData)
+        const funcResult = rule.func
+            ? of(rule.func(data, rootData))
+            : rule.asyncFunc(data, rootData);
+
+        return funcResult
             .pipe(
                 map(passed => passed ? ProcessResultType.Passed : ProcessResultType.Failed)
             );
     }
 
-    private doProcessRule<T>(rule: Rule<T>, state: TestRunState, isAsync: boolean): boolean {
-        // make sure we have the appropriate func to call
-        if ((isAsync && !rule.asyncFunc) || (!isAsync && !rule.func)) return false;
+    // private doProcessRule<T>(rule: Rule<T>, state: TestRunState, isAsync: boolean): boolean {
+    //     // make sure we have the appropriate func to call
+    //     if ((isAsync && !rule.asyncFunc) || (!isAsync && !rule.func)) return false;
 
-        // // if there is missing data, then assume we should process the rule
-        // if (!rule.options || !rule.options.controlStateOptions || !state || !state.controlState) return true;
+    //     // // if there is missing data, then assume we should process the rule
+    //     // if (!rule.options || !rule.options.controlStateOptions || !state || !state.controlState) return true;
 
-        // if (rule.options.controlStateOptions.skipPristine && state.controlState.pristine) return false;
-        // if (rule.options.controlStateOptions.skipUntouched && state.controlState.untouched) return false;
+    //     // if (rule.options.controlStateOptions.skipPristine && state.controlState.pristine) return false;
+    //     // if (rule.options.controlStateOptions.skipUntouched && state.controlState.untouched) return false;
 
-        return true;
-    }
+    //     return true;
+    // }
 
     private canShortCircuitRuleGroup<T>(ruleSetResult: ProcessResultType, ruleGroup: RuleGroup<T>): boolean {
         return (ruleSetResult == ProcessResultType.Passed && ruleGroup.any) // it passed, and we only need one to pass

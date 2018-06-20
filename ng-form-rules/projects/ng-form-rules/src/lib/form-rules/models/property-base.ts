@@ -2,6 +2,7 @@ import { Test } from "./test";
 import { Property } from "./property";
 import { ArrayItemProperty } from "./array-item-property";
 import { Subscription } from "rxjs";
+import { ValueChangeOptions } from "./value-change-options";
 
 /**
  * Base class representing a property
@@ -10,11 +11,6 @@ export abstract class PropertyBase<T> {
     private _absolutePath: string;
     private _dependencyPropertySubscriptions: Subscription[] = [];
     private _ownerModelSettingsName: string;
-
-    // asyncOptions: {
-    //     distinctUntilChanged?: boolean,
-    //     debounceMilliseconds?: number
-    // } = { distinctUntilChanged: true, debounceMilliseconds: 1000 };
 
     /**
      * Validation tests
@@ -61,6 +57,29 @@ export abstract class PropertyBase<T> {
     get ownerModelSettingsName(): string {
         return this._ownerModelSettingsName;
     }
+
+    /**
+     * Options for how to respond to value changes on property control and dependency controls
+     */
+    valueChangeOptions: {
+        dependencyProperties: {
+            valid: ValueChangeOptions,
+            edit: ValueChangeOptions
+        },
+        self: {
+            asyncValid: ValueChangeOptions,
+            edit: ValueChangeOptions
+        }
+    } = {
+        dependencyProperties: {
+            valid: { distinctUntilChanged: false, debounceMilliseconds: 0 },
+            edit: { distinctUntilChanged: false, debounceMilliseconds: 0 }
+        },
+        self: {
+            asyncValid: { distinctUntilChanged: false, debounceMilliseconds: 0 },
+            edit: { distinctUntilChanged: false, debounceMilliseconds: 0 }
+        }
+    };
 
     /**
      * Determines if the property is an ArrayItemProperty

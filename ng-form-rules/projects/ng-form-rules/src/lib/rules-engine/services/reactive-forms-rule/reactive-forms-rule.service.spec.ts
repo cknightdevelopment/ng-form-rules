@@ -12,6 +12,7 @@ import { UtilsModule } from "../../../utils/utils.module";
 import { of } from "rxjs";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { AdhocModelSettings } from "../../../form-rules/models/adhoc-model-settings";
+import { Component } from "@angular/core";
 
 const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: "Subaru" }, nicknames: ["C-TOWN", "C"] };
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };
@@ -58,12 +59,12 @@ class PersonModelValidSettings extends AbstractModelSettings<Person> {
                         { dependencyProperties: ["./age", "car.make", "nicknames.0"]}
                     )
                 ));
-                p.valid.push(this.builder.validTest(
-                    'Name messsage async',
-                    this.builder.ruleAsync<Person, Person>((x, root) => of(root.age == 100),
-                        { dependencyProperties: ["./age"]}
-                    )
-                ));
+                // p.valid.push(this.builder.validTest(
+                //     'Name messsage async',
+                //     this.builder.ruleAsync<Person, Person>((x, root) => of(root.age == 100),
+                //         { dependencyProperties: ["./age"]}
+                //     )
+                // ));
             })
         ];
     }
@@ -108,7 +109,6 @@ class PersonModelEditSettings extends AbstractModelSettings<Person> {
                         name: "Name test",
                         check: {
                             func: x => x.name.startsWith("C") && x.age > 0 && x.car.make == "Subaru" && x.nicknames[0] == "C-TOWN",
-                            asyncFunc: (x, root) => of(root.age == 100),
                             options: { dependencyProperties: ["./age", "car.make", "nicknames.0"] }
                         }
                     }
@@ -185,37 +185,21 @@ describe('ReactiveFormsRuleService', () => {
                 const fg = svc.createFormGroup(validSettingsKey, invalidPerson);
                 expect(fg.valid).toBeFalsy();
             });
-
-            describe('async', () => {
-                it('should create form group as invalid when given invalid values', () => {
-                    const fg = svc.createFormGroup(validSettingsKey, Object.assign({}, validPerson, { age: 200 }));
-                    const nameControl = fg.get('name');
-
-                    expect(nameControl.valid).toBeFalsy();
-                    expect(nameControl.errors).toBeTruthy();
-                });
-            });
         });
 
         describe('adhoc model setting', () => {
-            const adhocModelSettings = AdhocModelSettings.create<Person>(builder => {
+            const adhoc = AdhocModelSettings.create<Person>(builder => {
                 return [
                     builder.property('name', p => {
                         p.valid.push(builder.validTest('Boo!', builder.rule(person => !!person.name)));
-                    }),
-                    builder.property('age', p => {
-                        p.valid.push(builder.validTest('Boo async!', builder.ruleAsync(person => of(!!person.age))));
-                    }),
+                    })
                 ];
             });
 
             it('should create form group according to model settings', () => {
-                const fg = svc.createFormGroup(adhocModelSettings);
+                const fg = svc.createFormGroup(adhoc);
                 const value = fg.getRawValue();
-                expect(value).toEqual({
-                    age: null,
-                    name: null
-                } as Person);
+                expect(value).toEqual({ name: null } as Person);
             });
 
             it('should throw an error provided falsey model settings', () => {
@@ -223,28 +207,38 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should create form group with initial values', () => {
-                const fg = svc.createFormGroup(adhocModelSettings, { name: 'Chris', age: 30 });
+                const fg = svc.createFormGroup(adhoc, { name: 'Chris' });
                 const value = fg.getRawValue();
-                expect(value).toEqual({ name: 'Chris', age: 30 });
+                expect(value).toEqual({ name: 'Chris' });
             });
 
             it('should create form group as valid when given valid values', () => {
-                const fg = svc.createFormGroup(adhocModelSettings, { name: 'Chris', age: 30 });
+                const fg = svc.createFormGroup(adhoc, { name: 'Chris' });
                 expect(fg.valid).toBeTruthy();
             });
 
             it('should create form group as invalid when given invalid values', () => {
-                const fg = svc.createFormGroup(adhocModelSettings, { name: '', age: 30 });
+                const fg = svc.createFormGroup(adhoc, { name: '' });
                 expect(fg.valid).toBeFalsy();
             });
 
             describe('async', () => {
-                it('should create form group as invalid when given invalid values', () => {
-                    const fg = svc.createFormGroup(adhocModelSettings, { name: 'Chris', age: 0 });
-                    const ageControl = fg.get('age');
+                const asyncAdhoc = AdhocModelSettings.create<Person>(builder => {
+                    return [
+                        builder.property('name', p => {
+                            p.valid.push(builder.validTest('Message',
+                                builder.ruleAsync((x: Person) => of(x.name === 'Chris'))
+                            ));
+                        }),
+                    ];
+                });
 
-                    expect(ageControl.valid).toBeFalsy();
-                    expect(ageControl.errors).toBeTruthy();
+                it('should create form group as invalid when given invalid values', () => {
+                    const fg = svc.createFormGroup(asyncAdhoc, { name: 'Tom' });
+                    const nameControl = fg.get('name');
+
+                    expect(nameControl.valid).toBeFalsy();
+                    expect(nameControl.errors).toBeTruthy();
                 });
             });
         });
@@ -362,15 +356,28 @@ describe('ReactiveFormsRuleService', () => {
         });
 
         describe('async', () => {
+            const adhoc = AdhocModelSettings.create<Person>(builder => {
+                return [
+                    builder.property('age'),
+                    builder.property('name', p => {
+                        p.edit.push(builder.editTest(
+                            builder.ruleAsync((x: Person) => of(x.age === 100), { dependencyProperties: ['./age'] })
+                        ));
+                    }),
+                ];
+            });
+
             it('should pass async test', () => {
-                const fg = svc.createFormGroup(editSettingsKey, validPerson);
+                const fg = svc.createFormGroup(adhoc, validPerson);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
             });
 
             it('should fail async test', () => {
-                const fg = svc.createFormGroup(editSettingsKey, Object.assign({}, validPerson, { age: 200 }));
+                const fg = svc.createFormGroup(adhoc, validPerson);
+                fg.patchValue({age: 200});
+
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeFalsy();
@@ -436,17 +443,17 @@ describe('ReactiveFormsRuleService', () => {
     });
 
     describe('extend', () => {
-        let fg: FormGroup;
-        let nameControl: AbstractControl;
-        let ageControl: AbstractControl;
-
-        beforeEach(() => {
-            fg = svc.createFormGroup(validSettingsKey, validPerson);
-            nameControl = fg.get('name');
-            ageControl = fg.get('age');
-        });
-
         describe('sync', () => {
+            let fg: FormGroup;
+            let nameControl: AbstractControl;
+            let ageControl: AbstractControl;
+
+            beforeEach(() => {
+                fg = svc.createFormGroup(validSettingsKey, validPerson);
+                nameControl = fg.get('name');
+                ageControl = fg.get('age');
+            });
+
             it('should extend existing validator with single validator', () => {
                 svc.extendValidator(nameControl, Validators.required);
 
@@ -495,29 +502,34 @@ describe('ReactiveFormsRuleService', () => {
         });
 
         describe('async', () => {
-            const customAsyncValidator1 = () => {
-                return (control: AbstractControl) => {
-                  return of({customAsyncValidator1: { passed: false }});
-                };
-            };
+            const asyncModelSettings = AdhocModelSettings.create<Person>(builder => {
+                return [
+                    builder.property('name', p => {
+                        p.valid.push(builder.validTest('Boo!',
+                            builder.ruleAsync(x => of(x.name === 'Chris'))
+                        ));
+                    }),
+                    builder.property('age')
+                ];
+            });
 
-            const customAsyncValidator2 = () => {
-                return (control: AbstractControl) => {
-                    return of({customAsyncValidator2: { passed: false }});
-                  };
-            };
+            const customAsyncValidator1 = () => (c: AbstractControl) => of({customAsyncValidator1: { passed: false }});
+            const customAsyncValidator2 = () => (c: AbstractControl) => of({customAsyncValidator2: { passed: false }});
+
+            let fg: FormGroup;
+            let nameControl: AbstractControl;
+            let ageControl: AbstractControl;
 
             beforeEach(() => {
-                // we need to do this because async validators won't run unless all sync validators pass.
-                // we are testing asyn stuff, just rule it out of the equation
-                nameControl.clearValidators();
+                fg = svc.createFormGroup(asyncModelSettings, { name: 'Chris' });
+                nameControl = fg.get('name');
+                ageControl = fg.get('age');
             });
 
             it('should extend existing async validator with single async validator', () => {
                 svc.extendAsyncValidator(nameControl, customAsyncValidator1());
 
-                ageControl.setValue(0);
-                nameControl.patchValue(validPerson.name);
+                nameControl.setValue('Tom');
 
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
                 expect(nameControl.errors.customAsyncValidator1).toBeTruthy();
@@ -526,8 +538,7 @@ describe('ReactiveFormsRuleService', () => {
             it('should extend existing async validator with multiple async validators', () => {
                 svc.extendAsyncValidator(nameControl, [customAsyncValidator1(), customAsyncValidator2()]);
 
-                ageControl.setValue(0);
-                nameControl.patchValue(validPerson.name);
+                nameControl.setValue('Tom');
 
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
                 expect(nameControl.errors.customAsyncValidator1).toBeTruthy();
@@ -556,11 +567,19 @@ describe('ReactiveFormsRuleService', () => {
             it('should not throw exception when passed falsy async validator', () => {
                 svc.extendValidator(nameControl, null);
 
-                ageControl.setValue(0);
-                nameControl.patchValue(validPerson.name);
+                nameControl.setValue('Tom');
 
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
             });
         });
     });
 });
+
+@Component({
+    selector: 'lib-banner',
+    template: '<h1>{{title}}</h1>',
+    styles: ['h1 { color: green; font-size: 350%}']
+  })
+  export class BannerComponent {
+    title = 'Test Tour of Heroes';
+  }

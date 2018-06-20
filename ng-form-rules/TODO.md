@@ -2,10 +2,9 @@
 
 ### Functionality
 - improve aip experience
-- debounce and distinct for async
 
 ### Testing
-- 
+- debounce and distinct
 
 ### Dev Ops
 - npm readme

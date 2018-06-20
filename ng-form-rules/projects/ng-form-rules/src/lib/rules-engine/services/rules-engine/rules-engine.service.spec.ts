@@ -14,9 +14,7 @@ import { of } from 'rxjs';
 import { Car } from '../../../test-utils/models/car';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { ProcessResultType } from '../../../form-rules/models/proccess-result-type';
-import { AdhocModelSettings } from '../../../form-rules/models/adhoc-model-settings';
 import { ModelSettingsBuilder } from '../../../form-rules/helper/model-settings-builder';
-import { async } from 'q';
 
 const validPerson: Person = { name: "Chris", age: 100 };
 const invalidPerson: Person = { name: "Tom", age: 999 };

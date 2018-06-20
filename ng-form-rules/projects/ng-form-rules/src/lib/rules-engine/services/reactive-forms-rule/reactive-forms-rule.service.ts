@@ -6,8 +6,8 @@ import { Property } from "../../../form-rules/models/property";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { TraceService } from "../../../utils/trace/trace.service";
-import { Observable, BehaviorSubject, of } from "rxjs";
-import { map, tap, switchMap, debounceTime, take, distinctUntilChanged, distinctUntilKeyChanged, filter, windowTime, timeInterval } from "rxjs/operators";
+import { Observable, BehaviorSubject, of, OperatorFunction, timer, empty } from "rxjs";
+import { map, tap, switchMap, debounceTime, take, distinctUntilChanged, debounce } from "rxjs/operators";
 import { TestResultsBase } from "../../../form-rules/models/test-results-base";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
 import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";
@@ -15,6 +15,7 @@ import { ReactiveFormsValidationErrorsData } from "../../../form-rules/models/re
 import { ControlState } from "../../../form-rules/models/control-state";
 import { CommonService } from "../../../utils/common/common.service";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
+import { ValueChangeOptions } from "../../../form-rules/models/value-change-options";
 // tslint:enable:max-line-length
 
 /**
@@ -23,6 +24,7 @@ import { AbstractModelSettings } from "../../../form-rules/models/abstract-model
 @Injectable()
 export class ReactiveFormsRuleService {
     private static readonly FORM_MODEL_SETTINGS_PROPERTY_NAME = 'ngFormRulesModelSetting';
+    private static readonly FORCE_ASYNC_VALID_TEST_RUN_PROPERTY_NAME = 'ngFormRulesForceAsyncValidTestRun';
 
     constructor(
         private rulesEngineSvc: RulesEngineService,
@@ -38,18 +40,18 @@ export class ReactiveFormsRuleService {
      * @param initialValue Initial data to set the form values to
      * @returns Form group created according to defined model settings
      */
-    createFormGroup(
-        modelSettings: string | AbstractModelSettings<any>,
+    createFormGroup<T>(
+        modelSettings: string | AbstractModelSettings<T>,
         initialValue?: any
     ): FormGroup {
-        let settings: AbstractModelSettings<any>;
+        let settings: AbstractModelSettings<T>;
 
         if (typeof modelSettings === "string") {
             settings = this.rulesEngineSvc.getModelSettings(modelSettings as string);
             if (!settings) throw new Error(`No model setting found with the name "${modelSettings}"`);
         } else {
             if (!modelSettings) throw new Error(`Adhoc model setting provided is invalid`);
-            settings = modelSettings as AbstractModelSettings<any>;
+            settings = modelSettings as AbstractModelSettings<T>;
             this.rulesEngineSvc.initializeModelSetting(settings);
         }
 
@@ -137,9 +139,13 @@ export class ReactiveFormsRuleService {
         control.setAsyncValidators(this.buildAsyncValidatorFunction(property));
 
         // setup edit tests on value change
-        control.valueChanges.subscribe(value => {
-            this.persistEditTests(control, property);
-        });
+        control.valueChanges
+            .pipe(
+                this.blah2(property.valueChangeOptions.self.edit)
+            )
+            .subscribe(value => {
+                this.persistEditTests(control, property);
+            });
 
         return control;
     }
@@ -167,14 +173,14 @@ export class ReactiveFormsRuleService {
     }
 
     private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
-        const hhh = this.rulesEngineSvc.groupTestsBySyncType(property.valid);
-        if (!hhh.sync.length) return null;
+        const syncGroups = this.rulesEngineSvc.groupTestsBySyncType(property.valid);
+        if (!syncGroups.sync.length) return null;
 
         return (control: AbstractControl): ValidationErrors => {
             const controlContextValues = this.getControlContextValues(control, property);
 
             const testResults = this.rulesEngineSvc
-                .runTests(controlContextValues.relative, hhh.sync, {
+                .runTests(controlContextValues.relative, syncGroups.sync, {
                     rootData: controlContextValues.root,
                     controlState: ControlState.create(control)
                 });
@@ -194,20 +200,11 @@ export class ReactiveFormsRuleService {
         if (!rawAsyncFunc) return null;
 
         const values = new BehaviorSubject<AbstractControl>(null);
-        // let lastValue: any;
         const valid$ = values.pipe(
-            // debounceTime(property.asyncOptions.debounceMilliseconds || 0),
-            // map((control) => ({
-            //     control: control,
-            //     passthrough: !!property.asyncOptions.distinctUntilChanged && control.value === lastValue
-            // })),
-            // tap((x) => {
-            //     if (!x.passthrough) lastValue = x.control.value;
-            // }),
-            // switchMap(x => {
-            //     return x.passthrough ? of(null) : rawAsyncFunc(x.control);
-            // }),
-            switchMap(x => rawAsyncFunc(x)),
+            this.blah1(property.valueChangeOptions.self.asyncValid),
+            switchMap(x => {
+                return x.passthrough ? of(null) : rawAsyncFunc(x.control);
+            }),
             take(1)
         );
 
@@ -218,13 +215,13 @@ export class ReactiveFormsRuleService {
     }
 
     private buildAsyncValidatorFunctionRaw<T>(property: PropertyBase<T>): AsyncValidatorFn {
-        const hhh = this.rulesEngineSvc.groupTestsBySyncType(property.valid);
-        if (!hhh.async.length) return null;
+        const syncGroups = this.rulesEngineSvc.groupTestsBySyncType(property.valid);
+        if (!syncGroups.async.length) return null;
 
         return (control: AbstractControl) => {
             const controlContextValues = this.getControlContextValues(control, property);
 
-            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, hhh.async, {
+            return this.rulesEngineSvc.runTestsAsync(controlContextValues.relative, syncGroups.async, {
                 rootData: controlContextValues.root,
                 controlState: ControlState.create(control)
             }).pipe(
@@ -278,9 +275,14 @@ export class ReactiveFormsRuleService {
 
             if (!dependencyControl) return;
 
-            const sub$ = dependencyControl.valueChanges.subscribe(value => {
-                propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
-            });
+            const sub$ = dependencyControl.valueChanges
+                .pipe(
+                    this.blah2(property.valueChangeOptions.dependencyProperties.valid)
+                )
+                .subscribe(value => {
+                    this.setForceAsyncValidationTestForControl(propertyControl, true);
+                    propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+                });
 
             property.addDependencyPropertySubscription(sub$);
         });
@@ -299,9 +301,13 @@ export class ReactiveFormsRuleService {
             if (!dependencyControl) return;
 
             // setup control to perform edit tests when dependency property changes
-            const sub$ = dependencyControl.valueChanges.subscribe(value => {
-                this.persistEditTests(propertyControl, property);
-            });
+            const sub$ = dependencyControl.valueChanges
+                .pipe(
+                    this.blah2(property.valueChangeOptions.dependencyProperties.edit)
+                )
+                .subscribe(value => {
+                    this.persistEditTests(propertyControl, property);
+                });
 
             property.addDependencyPropertySubscription(sub$);
         });
@@ -324,6 +330,47 @@ export class ReactiveFormsRuleService {
             else if (!testResults.passed && propertyControl.enabled)
                 propertyControl.disable({emitEvent: false});
         });
+    }
+
+    private blah1(valueChangeOptions: ValueChangeOptions): OperatorFunction<AbstractControl, AsyncValidationPassthroughable> {
+        return (source$: Observable<AbstractControl>): Observable<AsyncValidationPassthroughable> => {
+            let lastValue: any;
+            let isForce: boolean;
+
+            return source$.pipe(
+                tap(control => {
+                    isForce = this.doesControlHaveForcedAsyncValidation(control);
+                    this.setForceAsyncValidationTestForControl(control, false);
+                }),
+                debounce(x => {
+                    return isForce || valueChangeOptions.debounceMilliseconds > 0
+                        ? timer(valueChangeOptions.debounceMilliseconds)
+                        : empty();
+                }),
+                map(control => {
+                    return {
+                        control: control,
+                        passthrough: !(control.value !== lastValue || !valueChangeOptions.distinctUntilChanged || isForce)
+                    } as AsyncValidationPassthroughable;
+                }),
+                tap(x => {
+                    if (!x.passthrough) lastValue = x.control.value;
+                })
+            );
+          };
+    }
+
+    private blah2(valueChangeOptions: ValueChangeOptions): OperatorFunction<any, any> {
+        return (source$: Observable<any>): Observable<any> => {
+            return source$.pipe(
+                debounce(x => {
+                    return valueChangeOptions.debounceMilliseconds > 0
+                        ? timer(valueChangeOptions.debounceMilliseconds)
+                        : empty();
+                }),
+                valueChangeOptions.distinctUntilChanged ? distinctUntilChanged() : tap()
+            );
+        };
     }
 
     private getControlContextValues<T>(control: AbstractControl, property: Property<T> | ArrayItemProperty<T>): ControlContextValues {
@@ -418,16 +465,29 @@ export class ReactiveFormsRuleService {
             + `${testResults.skippedResults.length} SKIP)`;
     }
 
-    private attachModelSettingsToForm<T>(formGroup: FormGroup, modelSettings: AbstractModelSettings<T>) {
+    private attachModelSettingsToForm<T>(formGroup: FormGroup, modelSettings: AbstractModelSettings<T>): void {
         formGroup[ReactiveFormsRuleService.FORM_MODEL_SETTINGS_PROPERTY_NAME] = modelSettings;
     }
 
-    private getModelSettingsFromForm<T>(formGroup: FormGroup) {
+    private getModelSettingsFromForm<T>(formGroup: FormGroup): AbstractModelSettings<T> {
         return formGroup[ReactiveFormsRuleService.FORM_MODEL_SETTINGS_PROPERTY_NAME] as AbstractModelSettings<T>;
+    }
+
+    private setForceAsyncValidationTestForControl(control: AbstractControl, force: boolean): void {
+        control[ReactiveFormsRuleService.FORCE_ASYNC_VALID_TEST_RUN_PROPERTY_NAME] = force;
+    }
+
+    private doesControlHaveForcedAsyncValidation(control: AbstractControl): boolean {
+        return !!(control[ReactiveFormsRuleService.FORCE_ASYNC_VALID_TEST_RUN_PROPERTY_NAME]);
     }
 }
 
-class ControlContextValues {
+interface ControlContextValues {
     root: any;
     relative: any;
+}
+
+interface AsyncValidationPassthroughable {
+    control: AbstractControl;
+    passthrough: boolean;
 }
