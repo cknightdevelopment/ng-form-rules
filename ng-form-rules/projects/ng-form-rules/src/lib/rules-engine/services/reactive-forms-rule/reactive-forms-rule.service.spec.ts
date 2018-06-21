@@ -18,6 +18,7 @@ const validPerson: Person = { name: "Chris", age: 100, car: { year: 2017, make: 
 const invalidPerson: Person = { name: "Tom", age: -99, nicknames: ["Z-TOWN", "Z"] };
 const validSettingsKey = 'validSettings';
 const editSettingsKey = 'editSettings';
+const registeredSettingsKey = 'registeredSettings';
 
 class PersonModelValidSettings extends AbstractModelSettings<Person> {
     buildProperties(): Property<Person>[] {
@@ -118,6 +119,19 @@ class PersonModelEditSettings extends AbstractModelSettings<Person> {
     }
 }
 
+class RegisteredSettings extends AbstractModelSettings<Person> {
+    protected buildProperties(): Property<Person>[] {
+        return [
+            this.builder.property('name', p => {
+                p.valid.push(
+                    this.builder.validTest('Name is required', 
+                        this.builder.rule(x => !!x.name)
+                    ))
+            })
+        ];
+    }
+}
+
 describe('ReactiveFormsRuleService', () => {
     let svc: ReactiveFormsRuleService;
     let engine: RulesEngineService;
@@ -134,6 +148,7 @@ describe('ReactiveFormsRuleService', () => {
                 {
                     provide: MODEL_SETTINGS_TOKEN,
                     useValue: [
+                        new RegisteredSettings(registeredSettingsKey),
                         new PersonModelValidSettings(validSettingsKey),
                         new PersonModelEditSettings(editSettingsKey)
                     ]
@@ -152,37 +167,31 @@ describe('ReactiveFormsRuleService', () => {
 
     describe('create form group', () => {
         describe('registered model setting', () => {
-            it('should create form group according to model settings', () => {
-                const fg = svc.createFormGroup(validSettingsKey);
+            fit('should create form group according to model settings', () => {
+                const fg = svc.createFormGroup(registeredSettingsKey);
                 const value = fg.getRawValue();
                 expect(value).toEqual({
-                    age: null,
-                    name: null,
-                    car: {
-                        make: null,
-                        year: null
-                    },
-                    nicknames: [null]
+                    name: null
                 } as Person);
             });
 
-            it('should throw an error provided non-configured model settings name', () => {
+            fit('should throw an error provided non-configured model settings name', () => {
                 expect(() => svc.createFormGroup('BAD NAME')).toThrowError(`No model setting found with the name "BAD NAME"`);
             });
 
-            it('should create form group with initial values', () => {
-                const fg = svc.createFormGroup(validSettingsKey, validPerson);
+            fit('should create form group with initial values', () => {
+                const fg = svc.createFormGroup(registeredSettingsKey, { name: 'Chris' });
                 const value = fg.getRawValue();
-                expect(value).toEqual(validPerson);
+                expect(value).toEqual({ name: 'Chris' });
             });
 
-            it('should create form group as valid when given valid values', () => {
-                const fg = svc.createFormGroup(validSettingsKey, validPerson);
+            fit('should create form group as valid when given valid values', () => {
+                const fg = svc.createFormGroup(registeredSettingsKey, {name: 'Chris'});
                 expect(fg.valid).toBeTruthy();
             });
 
-            it('should create form group as invalid when given invalid values', () => {
-                const fg = svc.createFormGroup(validSettingsKey, invalidPerson);
+            fit('should create form group as invalid when given invalid values', () => {
+                const fg = svc.createFormGroup(registeredSettingsKey, {name: null});
                 expect(fg.valid).toBeFalsy();
             });
         });
