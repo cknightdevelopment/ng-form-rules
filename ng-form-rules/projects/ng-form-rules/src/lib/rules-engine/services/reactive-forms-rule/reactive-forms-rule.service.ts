@@ -35,6 +35,15 @@ export class ReactiveFormsRuleService {
     }
 
     /**
+     * Gets model settings with the provided name
+     * @param name Name of model setting
+     * @returns Model settings with the provided name
+     */
+    getModelSettings<T>(name: string): AbstractModelSettings<T> {
+        return this.rulesEngineSvc.getModelSettings(name);
+    }
+
+    /**
      * Creates a form group using an instance of model settings
      * @param modelSettings Name of the model setting or an instance of model settings to use
      * @param initialValue Initial data to set the form values to
