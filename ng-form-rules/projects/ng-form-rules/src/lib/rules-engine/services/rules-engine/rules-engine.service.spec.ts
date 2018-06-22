@@ -174,7 +174,7 @@ describe('RulesEngineService', () => {
                 expect(result).toEqual(ProcessResultType.Passed);
             });
 
-            it('should process rule set with truthy "any" when second rule passes', () => {
+            it('should process rule group with truthy "any" when second rule passes', () => {
                 const ruleGroup = builder.ruleGroup<Person>(
                     [
                         builder.rule((x: Person) => !x.name),
@@ -185,7 +185,7 @@ describe('RulesEngineService', () => {
                 expect(result).toEqual(ProcessResultType.Passed);
             });
 
-            it('should process rule set with truthy "any" when no rules pass', () => {
+            it('should process rule group with truthy "any" when no rules pass', () => {
                 const ruleGroup = builder.ruleGroup<Person>(
                     [
                         builder.rule((x: Person) => !!x.name),
@@ -194,6 +194,26 @@ describe('RulesEngineService', () => {
                 );
                 const result = svc.processRuleSet({name: null}, ruleGroup);
                 expect(result).toEqual(ProcessResultType.Failed);
+            });
+
+            it('should process rule group with falsy rules', () => {
+                const ruleGroup = builder.ruleGroup<Person>([null]);
+                const result = svc.processRuleSet({name: null}, ruleGroup);
+                expect(result).toEqual(ProcessResultType.Skipped);
+            });
+
+            it('should process rule group with rules that have null sync rule', () => {
+                const ruleGroup = builder.ruleGroup<Person>([
+                    builder.rule(null)
+                ]);
+                const result = svc.processRuleSet({name: null}, ruleGroup);
+                expect(result).toEqual(ProcessResultType.Skipped);
+            });
+
+            it('should process rule when ran sync for an async rule', () => {
+                const rule = builder.ruleAsync((x: Person) => of(!!x.name));
+                const result = svc.processRuleSet({}, rule);
+                expect(result).toEqual(ProcessResultType.Skipped);
             });
         });
 
@@ -271,6 +291,33 @@ describe('RulesEngineService', () => {
                     expect(x).toEqual(ProcessResultType.Failed);
                 });
             });
+
+            it('should process rule group with falsy rules', () => {
+                const ruleGroup = builder.ruleGroup<Person>([null]);
+                svc.processRuleSetAsync({name: null}, ruleGroup)
+                    .subscribe(result => {
+                        expect(result).toEqual(ProcessResultType.Skipped);
+                    });
+            });
+
+            it('should process rule group with rules that have a null async func', () => {
+                const ruleGroup = builder.ruleGroup<Person>([
+                    builder.ruleAsync(null)
+                ]);
+                svc.processRuleSetAsync({name: null}, ruleGroup)
+                    .subscribe(result => {
+                        expect(result).toEqual(ProcessResultType.Skipped);
+                    });
+            });
+
+            it('should process rule when ran async for an sync rule', () => {
+                const rule = builder.rule((x: Person) => true);
+                svc.processRuleSetAsync({}, rule)
+                    .subscribe(result => {
+                        // async rule sets can have sync rules, so it should process
+                        expect(result).toEqual(ProcessResultType.Passed);
+                    });
+            });
         });
     });
 
@@ -337,6 +384,8 @@ describe('RulesEngineService', () => {
             const passedTest2 = builder.validTest('Pass test 2', builder.rule(x => true));
             const failedTest1 = builder.validTest('Failed test 1', builder.rule(x => false));
             const failedTest2 = builder.validTest('Failed test 2', builder.rule(x => false));
+            const skippedTest1 = builder.validTest('Skipped test 1', builder.rule(x => false), builder.rule(x => false));
+            const skippedTest2 = builder.validTest('Skipped test 2', builder.rule(x => false), builder.rule(x => false));
 
             it('should handle passed tests', () => {
                 const tests = [passedTest1, passedTest2];
@@ -358,6 +407,28 @@ describe('RulesEngineService', () => {
                 expect(results.passedResults.length).toEqual(0);
                 expect(results.skippedResults.length).toEqual(0);
                 expect(results.results.length).toEqual(2);
+            });
+
+            it('should handle skipped tests', () => {
+                const tests = [skippedTest1, skippedTest2];
+                const results = svc.runTests({}, tests);
+                expect(results.passed).toBeTruthy();
+                expect(results.messages).toEqual([]);
+                expect(results.failedResults.length).toEqual(0);
+                expect(results.passedResults.length).toEqual(0);
+                expect(results.skippedResults.length).toEqual(2);
+                expect(results.results.length).toEqual(2);
+            });
+
+            it('should handle mixture of tests', () => {
+                const tests = [passedTest1, failedTest1, skippedTest1];
+                const results = svc.runTests({}, tests);
+                expect(results.passed).toBeFalsy();
+                expect(results.messages).toEqual(["Failed test 1"]);
+                expect(results.failedResults.length).toEqual(1);
+                expect(results.passedResults.length).toEqual(1);
+                expect(results.skippedResults.length).toEqual(1);
+                expect(results.results.length).toEqual(3);
             });
 
             it('should handle when provided falsey tests', () => {
@@ -384,6 +455,8 @@ describe('RulesEngineService', () => {
             const passedTest2 = builder.validTest('Pass test 2', builder.ruleAsync(x => of(true)));
             const failedTest1 = builder.validTest('Failed test 1', builder.ruleAsync(x => of(false)));
             const failedTest2 = builder.validTest('Failed test 2', builder.ruleAsync(x => of(false)));
+            const skippedTest1 = builder.validTest('Skipped test 1', builder.ruleAsync(x => of(false)), builder.ruleAsync(x => of(false)));
+            const skippedTest2 = builder.validTest('Skipped test 2', builder.ruleAsync(x => of(false)), builder.ruleAsync(x => of(false)));
 
             it('should handle passed tests', () => {
                 const tests = [passedTest1, passedTest2];
@@ -408,6 +481,32 @@ describe('RulesEngineService', () => {
                         expect(results.passedResults.length).toEqual(0);
                         expect(results.skippedResults.length).toEqual(0);
                         expect(results.results.length).toEqual(2);
+                    });
+            });
+
+            it('should handle skipped tests', () => {
+                const tests = [skippedTest1, skippedTest2];
+                svc.runTestsAsync({}, tests)
+                    .subscribe(results => {
+                        expect(results.passed).toBeTruthy();
+                        expect(results.messages).toEqual([]);
+                        expect(results.failedResults.length).toEqual(0);
+                        expect(results.passedResults.length).toEqual(0);
+                        expect(results.skippedResults.length).toEqual(2);
+                        expect(results.results.length).toEqual(2);
+                    });
+            });
+
+            it('should handle mixture of tests', () => {
+                const tests = [passedTest1, failedTest1, skippedTest1];
+                svc.runTestsAsync({}, tests)
+                    .subscribe(results => {
+                        expect(results.passed).toBeFalsy();
+                        expect(results.messages).toEqual(["Failed test 1"]);
+                        expect(results.failedResults.length).toEqual(1);
+                        expect(results.passedResults.length).toEqual(1);
+                        expect(results.skippedResults.length).toEqual(1);
+                        expect(results.results.length).toEqual(3);
                     });
             });
 
@@ -515,6 +614,12 @@ describe('RulesEngineService', () => {
 
             expect(result.length).toEqual(4);
             expect(result).toEqual(["a", "b", "c", "d"]);
+        });
+
+        it('should handle falsey tests', () => {
+            const result = svc.getDependencyProperties(null);
+
+            expect(result).toEqual([]);
         });
     });
 

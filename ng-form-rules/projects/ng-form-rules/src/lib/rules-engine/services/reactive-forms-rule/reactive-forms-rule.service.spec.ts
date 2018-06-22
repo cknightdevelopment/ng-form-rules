@@ -222,7 +222,7 @@ describe('ReactiveFormsRuleService', () => {
                         p.edit.push(builder.editTest<Person>(
                             builder.rule(x => !x.car.make, { dependencyProperties: ['./car.make'] })));
                         p.edit.push(builder.editTest<Person>(
-                            builder.rule(x => !x.nicknames[0], { dependencyProperties: ['nicknames.0'] })));
+                            builder.rule(x => !x.nicknames[0], { dependencyProperties: ['/nicknames.0'] })));
                     }),
                     builder.property('car', p => {
                         p.properties = [
@@ -497,9 +497,9 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should not throw exception when passed falsy async validator', () => {
-                svc.extendValidator(nameControl, null);
+                svc.extendAsyncValidator(nameControl, null);
 
-                nameControl.setValue('Tom');
+                nameControl.setValue('Whatever');
 
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
             });

@@ -238,7 +238,6 @@ export class RulesEngineService {
             case ProcessResultType.Failed:
                 return failedTestResult;
             case ProcessResultType.Skipped:
-                return skippedTestResult;
             default:
                 return skippedTestResult;
         }
@@ -274,7 +273,6 @@ export class RulesEngineService {
                                     case ProcessResultType.Failed:
                                         return failedTestResult;
                                     case ProcessResultType.Skipped:
-                                        return skippedTestResult;
                                     default:
                                         return skippedTestResult;
                                 }
@@ -315,6 +313,8 @@ export class RulesEngineService {
     }
 
     private processRuleGroup<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): ProcessResultType {
+        if (!ruleGroup.rules) return ProcessResultType.Skipped;
+
         let passedCount = 0;
         let skippedCount = 0;
 
@@ -336,6 +336,7 @@ export class RulesEngineService {
     }
 
     private processRuleGroupAsync<T>(data: T, ruleGroup: RuleGroup<T>, state?: TestRunState): Observable<ProcessResultType> {
+        if (!ruleGroup.rules) return of(ProcessResultType.Skipped);
         const asyncRuleSetResults$ = ruleGroup.rules.map(x => this.processRuleSetAsync(data, x, state));
 
         return forkJoin(asyncRuleSetResults$).pipe(
