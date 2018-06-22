@@ -325,7 +325,7 @@ export class ReactiveFormsRuleService {
     private persistEditTests<T>(propertyControl: AbstractControl, property: PropertyBase<T>): void {
         const controlContextValues = this.getControlContextValues(propertyControl, property);
 
-        this.rulesEngineSvc.runAllTests(controlContextValues.relative, property.edit, {
+        this.rulesEngineSvc.editable(controlContextValues.relative, property, {
             rootData: controlContextValues.root,
             controlState: ControlState.create(propertyControl)
         }).subscribe(testResults => {

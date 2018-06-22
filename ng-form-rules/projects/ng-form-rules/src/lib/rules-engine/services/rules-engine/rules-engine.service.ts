@@ -11,7 +11,7 @@ import { TestRunState } from '../../../form-rules/models/test-run-state';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
 import { Observable, forkJoin, of } from 'rxjs';
-import {  map, flatMap, mergeMap, take } from 'rxjs/operators';
+import {  map, flatMap, mergeMap, take, tap } from 'rxjs/operators';
 import { TestResultsBase } from '../../../form-rules/models/test-results-base';
 import { PropertyTestResults } from '../../../form-rules/models/property-test-result';
 import { PropertyBase } from '../../../form-rules/models/property-base';
@@ -118,10 +118,14 @@ export class RulesEngineService {
      * @param property Property to run validation tests for
      * @returns Results of validation tests
      */
-    validate<T>(data: T, property: Property<T>, state?: TestRunState): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.valid, state) as any as PropertyTestResults<T>;
-        testResults.propertyName = property.name;
-        return testResults;
+    validate<T>(data: T, property: Property<T>, state?: TestRunState): Observable<PropertyTestResults<T>> {
+        return this.runAllTests(data, property.valid, state)
+            .pipe(
+                map((results: PropertyTestResults<T>) => {
+                    results.propertyName = property.absolutePath;
+                    return results as PropertyTestResults<T>;
+                })
+            );
     }
 
     /**
@@ -130,10 +134,14 @@ export class RulesEngineService {
      * @param property Property to run editability tests for
      * * @returns Results of editability tests
      */
-    editable<T>(data: T, property: Property<T>, state?: TestRunState): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.edit, state) as any as PropertyTestResults<T>;
-        testResults.propertyName = property.name;
-        return testResults;
+    editable<T>(data: T, property: PropertyBase<T>, state?: TestRunState): Observable<PropertyTestResults<T>> {
+        return this.runAllTests(data, property.edit, state)
+            .pipe(
+                map((results: PropertyTestResults<T>) => {
+                    results.propertyName = property.absolutePath;
+                    return results as PropertyTestResults<T>;
+                })
+            );
     }
 
     /**
@@ -142,10 +150,14 @@ export class RulesEngineService {
      * @param property Property to run visibility tests for
      * * @returns Results of visibility tests
      */
-    visible<T>(data: T, property: Property<T>, state?: TestRunState): PropertyTestResults<T> {
-        const testResults = this.runTests(data, property.view, state) as any as PropertyTestResults<T>;
-        testResults.propertyName = property.name;
-        return testResults;
+    visible<T>(data: T, property: Property<T>, state?: TestRunState): Observable<PropertyTestResults<T>> {
+        return this.runAllTests(data, property.view, state)
+            .pipe(
+                map((results: PropertyTestResults<T>) => {
+                    results.propertyName = property.absolutePath;
+                    return results as PropertyTestResults<T>;
+                })
+            );
     }
 
     /**
