@@ -203,13 +203,14 @@ export class RulesEngineService {
     runAllTests<T>(data: T, tests: Test<T>[], state?: TestRunState): Observable<TestResultsBase<T>> {
         if (!tests || !tests.length) return of(new TestResultsBase([]));
 
-        const syncTestResults = of(this.runTests(data, tests, state));
+        const syncGroups = this.groupTestsBySyncType(tests);
+        const syncTestResults = of(this.runTests(data, syncGroups.sync, state));
 
         return syncTestResults.pipe(
             mergeMap(result => {
                 if (!result.passed) return of(result);
 
-                return this.runTestsAsync(data, tests, state);
+                return this.runTestsAsync(data, syncGroups.async, state);
             }),
             take(1)
         );

@@ -330,6 +330,7 @@ export class ReactiveFormsRuleService {
             rootData: controlContextValues.root,
             controlState: ControlState.create(propertyControl)
         }).subscribe(testResults => {
+            console.log('HERE')
             if (testResults.results.length) {
                 this.traceSvc.trace(`Editable property "${property.absolutePath}". ` +
                     this.buildTestResultStatsString(testResults));
