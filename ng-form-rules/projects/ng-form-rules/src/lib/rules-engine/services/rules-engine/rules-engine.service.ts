@@ -58,7 +58,7 @@ export class RulesEngineService {
 
         const settings = this.modelSettings[name];
 
-        // create new object as we manage
+        // create new object
         return settings
             ? Object.assign({}, this.modelSettings[name])
             : null;

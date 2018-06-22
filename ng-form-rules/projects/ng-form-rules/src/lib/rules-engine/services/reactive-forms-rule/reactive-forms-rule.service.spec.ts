@@ -57,6 +57,31 @@ describe('ReactiveFormsRuleService', () => {
         expect(svc).toBeTruthy();
     });
 
+    describe('get model settings', () => {
+        it('should get registered model settings', () => {
+            const settings = svc.getModelSettings(registeredSettingsKey);
+            expect(settings).toBeTruthy();
+        });
+
+        it('should get fresh copy ever time', () => {
+            const settings1 = svc.getModelSettings(registeredSettingsKey);
+            settings1.properties = [];
+
+            const settings2 = svc.getModelSettings(registeredSettingsKey);
+            expect(settings2.properties).not.toEqual(settings1.properties);
+        });
+
+        it('should handle getting settings that do not exist', () => {
+            const settings = svc.getModelSettings('bad-settings-name');
+            expect(settings).toBeNull();
+        });
+
+        it('should handle passing falsy settings name', () => {
+            const settings = svc.getModelSettings(null);
+            expect(settings).toBeNull();
+        });
+    });
+
     describe('create form group', () => {
         describe('registered model setting', () => {
             it('should create form group according to model settings', () => {
@@ -337,19 +362,19 @@ describe('ReactiveFormsRuleService', () => {
         });
 
         it('should push to array index item one', () => {
-            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, 1);
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, { index: 1 });
             expect(nicknamesFormArray.length).toEqual(3);
             expect(nicknamesFormArray.value).toEqual(['a', newNicknameValue, 'b']);
         });
 
         it('should push to end of array when given positive out of bound array index', () => {
-            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, 99);
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, { index: 99 });
             expect(nicknamesFormArray.length).toEqual(3);
             expect(nicknamesFormArray.value).toEqual(['a', 'b', newNicknameValue]);
         });
 
         it('should push to end of array when given negative out of bound array index', () => {
-            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, -99);
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, newNicknameValue, { index: -99 });
             expect(nicknamesFormArray.length).toEqual(3);
             expect(nicknamesFormArray.value).toEqual(['a', 'b', newNicknameValue]);
         });
@@ -358,7 +383,7 @@ describe('ReactiveFormsRuleService', () => {
             const nameControl = fg.get('name');
             expect(nameControl.valid).toBeTruthy();
 
-            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, "Invalid nickname", 0);
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, "Invalid nickname", { index: 0 });
 
             expect(nameControl.valid).toBeFalsy();
             expect(nameControl.errors).toBeTruthy();

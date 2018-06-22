@@ -16,6 +16,7 @@ import { ControlState } from "../../../form-rules/models/control-state";
 import { CommonService } from "../../../utils/common/common.service";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 import { ValueChangeOptions } from "../../../form-rules/models/value-change-options";
+import { AddArrayItemPropertyOptions } from "../../../form-rules/models/add-array-item-property-options";
 // tslint:enable:max-line-length
 
 /**
@@ -83,23 +84,23 @@ export class ReactiveFormsRuleService {
      * @param property ArrayItemProperty to for the array item to be added
      * @param parentFormArray The parent FormArray
      * @param initialValue Initial value of the form array item
-     * @param index Index of where in the array to add the new item
+     * @param options Options for adding new array item property
      */
     addArrayItemPropertyControl<T>(
         property: ArrayItemProperty<T>,
         parentFormArray: FormArray,
         initialValue?: any,
-        index?: number // TODO: make this an options model
+        options?: AddArrayItemPropertyOptions
     ): void {
         const control = this.buildAbstractControl(property, initialValue);
-        const willBeLastItem = !this.commonSvc.isZeroOrGreater(index) || index >= parentFormArray.length;
+        const willBeLastItem = !options || !this.commonSvc.isZeroOrGreater(options.index) || options.index >= parentFormArray.length;
 
         if (willBeLastItem)
             parentFormArray.push(control);
         else
-            parentFormArray.insert(index, control);
+            parentFormArray.insert(options.index, control);
 
-        const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : index;
+        const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : options.index;
 
         const modelSettings = this.getModelSettingsFromForm(parentFormArray.root as FormGroup);
         this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties);

@@ -1,10 +1,10 @@
 # MVP
 
 ### Functionality
-- improve aip experience
 
 ### Testing
 - debounce and distinct
+- get model settings
 
 ### Dev Ops
 
