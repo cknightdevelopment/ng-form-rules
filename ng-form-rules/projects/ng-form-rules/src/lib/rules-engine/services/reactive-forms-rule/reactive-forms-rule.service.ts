@@ -7,7 +7,7 @@ import { ArrayItemProperty } from "../../../form-rules/models/array-item-propert
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { TraceService } from "../../../utils/trace/trace.service";
 import { Observable, BehaviorSubject, of, OperatorFunction, timer, empty } from "rxjs";
-import { map, tap, switchMap, debounceTime, take, distinctUntilChanged, debounce } from "rxjs/operators";
+import { map, tap, switchMap, take, distinctUntilChanged, debounce } from "rxjs/operators";
 import { TestResultsBase } from "../../../form-rules/models/test-results-base";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
 import { ReactiveFormsFailedValdation } from "../../../form-rules/models/reactive-forms-failed-validation";

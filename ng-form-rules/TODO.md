@@ -3,8 +3,7 @@
 ### Functionality
 
 ### Testing
-- debounce and distinct
-- get model settings
+- debounce
 
 ### Dev Ops
 

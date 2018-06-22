@@ -57,6 +57,113 @@ describe('ReactiveFormsRuleService', () => {
         expect(svc).toBeTruthy();
     });
 
+    describe('value change options', () => {
+        describe('distinct until changed', () => {
+            let settings: AbstractModelSettings<Person>;
+            let spies: {
+                depValidFunc: jasmine.Spy,
+                depEditFunc: jasmine.Spy,
+                selfEditFunc: jasmine.Spy,
+                selfAsyncValidFunc: jasmine.Spy
+            };
+            const container = {
+                depValidFunc: (sanityCheck: string) => { },
+                depEditFunc: (sanityCheck: string) => { },
+                selfEditFunc: (sanityCheck: string) => { },
+                selfAsyncValidFunc: (sanityCheck: string) => { },
+            };
+
+            beforeEach(() => {
+                settings = AdhocModelSettings.create<Person>(b => {
+                    return [
+                        b.property('name', p => {
+                            p.valueChangeOptions.dependencyProperties.valid.distinctUntilChanged = true;
+                            p.valueChangeOptions.dependencyProperties.edit.distinctUntilChanged = true;
+                            p.valueChangeOptions.self.edit.distinctUntilChanged = true;
+                            p.valueChangeOptions.self.asyncValid.distinctUntilChanged = true;
+
+                            p.valid.push(b.validTest('',
+                                b.rule(x => {
+                                    container.depValidFunc('dep valid');
+                                    return true;
+                                }, { dependencyProperties: ['age'] })));
+
+                            p.edit.push(b.editTest(
+                                b.rule(x => {
+                                    container.depEditFunc('dep edit');
+                                    return true;
+                                }, { dependencyProperties: ['age'] })));
+
+                            p.edit.push(b.editTest(
+                                b.rule(x => {
+                                    container.selfEditFunc('self edit');
+                                    return true;
+                                })));
+
+                            p.valid.push(b.validTest('',
+                                b.ruleAsync(x => {
+                                    container.selfAsyncValidFunc('self valid async');
+                                    return of(true);
+                                })));
+                        }),
+                        b.property('age')
+                    ];
+                });
+
+                spies = {
+                    depValidFunc: spyOn(container, 'depValidFunc'),
+                    depEditFunc: spyOn(container, 'depEditFunc'),
+                    selfEditFunc: spyOn(container, 'selfEditFunc'),
+                    selfAsyncValidFunc: spyOn(container, 'selfAsyncValidFunc'),
+                };
+            });
+
+            it('should honor setting for valid dependency changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('age').setValue(100);
+                expect(spies.depValidFunc).toHaveBeenCalledWith('dep valid');
+
+                spies.depValidFunc.calls.reset();
+
+                form.get('age').setValue(100);
+                expect(spies.depValidFunc).not.toHaveBeenCalled();
+            });
+
+            it('should honor setting for edit dependency changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('age').setValue(100);
+                expect(spies.depEditFunc).toHaveBeenCalledWith('dep edit');
+
+                spies.depEditFunc.calls.reset();
+
+                form.get('age').setValue(100);
+                expect(spies.depEditFunc).not.toHaveBeenCalled();
+            });
+
+            it('should honor setting for edit self changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('name').setValue('Chris');
+                expect(spies.selfEditFunc).toHaveBeenCalledWith('self edit');
+
+                spies.selfEditFunc.calls.reset();
+
+                form.get('name').patchValue('Chris');
+                expect(spies.selfEditFunc).not.toHaveBeenCalled();
+            });
+
+            it('should honor setting for async valid self changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('name').setValue('Chris');
+                expect(spies.selfAsyncValidFunc).toHaveBeenCalledWith('self valid async');
+
+                spies.selfAsyncValidFunc.calls.reset();
+
+                form.get('name').patchValue('Chris');
+                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
+            });
+        });
+    });
+
     describe('get model settings', () => {
         it('should get registered model settings', () => {
             const settings = svc.getModelSettings(registeredSettingsKey);
@@ -101,12 +208,12 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should create form group as valid when given valid values', () => {
-                const fg = svc.createFormGroup(registeredSettingsKey, {name: 'Chris'});
+                const fg = svc.createFormGroup(registeredSettingsKey, { name: 'Chris' });
                 expect(fg.valid).toBeTruthy();
             });
 
             it('should create form group as invalid when given invalid values', () => {
-                const fg = svc.createFormGroup(registeredSettingsKey, {name: ''});
+                const fg = svc.createFormGroup(registeredSettingsKey, { name: '' });
                 expect(fg.valid).toBeFalsy();
             });
         });
@@ -142,7 +249,7 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should create form group as invalid when given invalid values', () => {
-                const fg = svc.createFormGroup(settings, {name: ''});
+                const fg = svc.createFormGroup(settings, { name: '' });
                 expect(fg.valid).toBeFalsy();
             });
         });
@@ -313,11 +420,11 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should re-enabled a disabled control when tests pass', () => {
-                const fg = svc.createFormGroup(settings, {age: 1});
+                const fg = svc.createFormGroup(settings, { age: 1 });
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeFalsy();
-                fg.patchValue({age: null});
+                fg.patchValue({ age: null });
                 expect(nameControl.enabled).toBeTruthy();
             });
         });
@@ -342,7 +449,7 @@ describe('ReactiveFormsRuleService', () => {
         const newNicknameValue = 'New Nickname';
 
         beforeEach(() => {
-            fg = svc.createFormGroup(settings, {nicknames: ['a', 'b']});
+            fg = svc.createFormGroup(settings, { nicknames: ['a', 'b'] });
             nicknamesFormArray = fg.get('nicknames') as FormArray;
             nicknameArrayItemProperty = settings.properties
                 .find(p => p.name == "nicknames")
@@ -406,7 +513,7 @@ describe('ReactiveFormsRuleService', () => {
             let ageControl: AbstractControl;
 
             beforeEach(() => {
-                fg = svc.createFormGroup(settings, {name: 'Chris'});
+                fg = svc.createFormGroup(settings, { name: 'Chris' });
                 nameControl = fg.get('name');
                 ageControl = fg.get('age');
             });
@@ -470,8 +577,8 @@ describe('ReactiveFormsRuleService', () => {
                 ];
             });
 
-            const customAsyncValidator1 = () => (c: AbstractControl) => of({customAsyncValidator1: { passed: false }});
-            const customAsyncValidator2 = () => (c: AbstractControl) => of({customAsyncValidator2: { passed: false }});
+            const customAsyncValidator1 = () => (c: AbstractControl) => of({ customAsyncValidator1: { passed: false } });
+            const customAsyncValidator2 = () => (c: AbstractControl) => of({ customAsyncValidator2: { passed: false } });
 
             let fg: FormGroup;
             let nameControl: AbstractControl;
