@@ -3,11 +3,21 @@
 [![Build Status](https://travis-ci.org/cknightdevelopment/ng-form-rules.svg?branch=master)](https://travis-ci.org/cknightdevelopment/ng-form-rules) 
 [![Coverage Status](https://coveralls.io/repos/github/cknightdevelopment/ng-form-rules/badge.svg)](https://coveralls.io/github/cknightdevelopment/ng-form-rules)
 
-## Installation
+## Table of Contents
+
+* [Installation](#installation)
+* [Dependencies](#deps)
+* [What does `ng-form-rules` do?](#do)
+* [What does `ng-form-rules` **NOT** do?](#not-do)
+* [Getting Started](#getting-started)
+* [Documentation](#docs)
+* [Examples](#examples)
+
+## <a id="installation"></a> Installation
 
 `npm install ng-form-rules --save`
 
-## Dependencies
+## <a id="deps"></a> Dependencies
 
 Note: if you are using Angular 6+ these are all installed for you by default. In other words, you are good to go :)
 
@@ -15,25 +25,31 @@ Note: if you are using Angular 6+ these are all installed for you by default. In
 * `@angular/core` version `^6.0.0`
 * `tslib` version `^1.9.0`
 
-## What DOES ng-form-rules Do?
+## <a id="do"></a> What does `ng-form-rules` do?
 
-_TODO_
+* Create model settings with rules dictating whether a property is valid and/or editable
+    * Rules can be as simple as making a property required or as complex as a multi-logical tree
+    * Rules can react to value changes in other properties in the form, whether at the same level, nested, in an array item, or at a parent's level
+    * Syncronous and asyncronous rules are allowed, of course
+* Generate the Angular form controls (`FormGroup`, `FormArray`, and `FormControl`) to use within your templates
+    * All of your rules will automatically be attached to the form. Let us take care of building those forms for you.
+* You are never blocked! The form controls we generate are no different than what you have used before in Angular. You can manipulate them, add controls, add validators outside of `ng-form-rules`, etc. No problemo!
 
-## What DOESN'T ng-form-rules Do?
+## <a id="not-do"></a> What does `ng-form-rules` **NOT** do?
 
-* Anything at all to do with styling, look & feel, etc.
-* Provide angular components, directives, pipes, etc. to display content on a page
+* Anything with styling, display, etc.
+* Provide Angular components, directives, pipes, etc. to display on a page
 * Provide built-in validation methods (e.g. MaxLength, Required, etc.)
 
-## Getting Started
+## <a id="getting-started"></a> Getting Started
 
 _TODO_
 
-## Documentation
+## <a id="docs"></a> Documentation
 
 * [Wiki][link-wiki]
 
-## Examples
+## <a id="examples"></a> Examples
 
 * [StackBlitz][link-stackblitz] - **Amazing** online IDE to see the examples in action and play around with them
 * [Example Repo][link-examples-repo] - Clone the examples to your local machine and take them for a spin
