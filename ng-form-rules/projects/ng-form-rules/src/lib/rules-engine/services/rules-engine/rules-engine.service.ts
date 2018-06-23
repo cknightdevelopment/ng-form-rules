@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@angular/core';
+import { Injectable, Inject, Optional } from '@angular/core';
 import { MODEL_SETTINGS_TOKEN } from '../../../form-rules/injection-tokens/model-settings.token';
 import { AbstractModelSettings } from '../../../form-rules/models/abstract-model-settings';
 import { Property } from '../../../form-rules/models/property';
@@ -23,18 +23,20 @@ import { TestSyncGroups } from '../../../form-rules/models/test-sync-groups';
  */
 @Injectable()
 export class RulesEngineService {
-    private modelSettings: { [key: string]: AbstractModelSettings<any>; };
+    private registeredSettings: { [key: string]: AbstractModelSettings<any>; };
 
     constructor(
-        @Inject(MODEL_SETTINGS_TOKEN) settings: AbstractModelSettings<any>[],
+        @Optional() @Inject(MODEL_SETTINGS_TOKEN) settings: AbstractModelSettings<any>[],
         private traceSvc: TraceService,
         private commonSvc: CommonService
     ) {
-        this.modelSettings = {};
+        this.registeredSettings = {};
+
+        if (!Array.isArray(settings)) return;
 
         settings.forEach(setting => {
             this.initializeModelSetting(setting);
-            this.modelSettings[setting.name] = setting;
+            this.registeredSettings[setting.name] = setting;
         });
     }
 
@@ -56,11 +58,11 @@ export class RulesEngineService {
     getModelSettings<T>(name: string): AbstractModelSettings<T> {
         this.traceSvc.trace(`Retrieving model settings "${name}"`);
 
-        const settings = this.modelSettings[name];
+        const settings = this.registeredSettings[name];
 
         // create new object
         return settings
-            ? Object.assign({}, this.modelSettings[name])
+            ? Object.assign({}, this.registeredSettings[name])
             : null;
     }
 

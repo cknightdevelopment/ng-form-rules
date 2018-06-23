@@ -8,11 +8,13 @@ import { RegisterModelSettings } from './models/register';
 import { JsonErrorsComponent } from './json-errors.component';
 import { UserService } from './services/user.service';
 import { HttpClientModule } from '@angular/common/http';
+import { GettingStartedComponent, GettingStartedModelSettings } from './sample-components/getting-started.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    JsonErrorsComponent
+    JsonErrorsComponent,
+    GettingStartedComponent
   ],
   imports: [
     BrowserModule,
@@ -25,7 +27,8 @@ import { HttpClientModule } from '@angular/common/http';
     {
       provide: MODEL_SETTINGS_TOKEN,
       useValue: [
-        new RegisterModelSettings('register')
+        new RegisterModelSettings('register'),
+        new GettingStartedModelSettings('getting-started')
       ]
     },
     { provide: TRACE_SETTINGS_TOKEN, useValue: true },

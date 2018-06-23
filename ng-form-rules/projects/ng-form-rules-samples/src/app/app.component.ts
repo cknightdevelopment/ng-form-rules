@@ -14,7 +14,7 @@ export class AppComponent implements OnInit {
   adhocForm: FormGroup;
 
   activeSample: string;
-  showErrors = false;
+  showErrors = true;
 
   constructor(private svc: ReactiveFormsRuleService, private userSvc: UserService) {
   }
@@ -38,6 +38,6 @@ export class AppComponent implements OnInit {
 
     this.adhocForm = this.svc.createFormGroup(adhocModelSettings);
 
-    this.activeSample = 'register';
+    this.activeSample = 'getting-started';
   }
 }

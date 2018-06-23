@@ -14,6 +14,8 @@ import { ProcessResultType } from '../../../form-rules/models/proccess-result-ty
 import { ModelSettingsBuilder } from '../../../form-rules/helper/model-settings-builder';
 import { AdhocModelSettings } from '../../../form-rules/models/adhoc-model-settings';
 import { Car } from '../../../test-utils/models/car';
+import { TraceService } from '../../../utils/trace/trace.service';
+import { CommonService } from '../../../utils/common/common.service';
 
 
 describe('RulesEngineService', () => {
@@ -61,6 +63,16 @@ describe('RulesEngineService', () => {
             const rogueModelSettings = svc.getModelSettings<any>("rogue");
             expect(rogueModelSettings).toBeTruthy();
             expect(rogueModelSettings.properties).toBeUndefined();
+        });
+
+        it('should not throw error when provided empty model settings (token is optional)', () => {
+            expect(() => new RulesEngineService([], new TraceService(false), new CommonService()))
+                .not.toThrowError();
+        });
+
+        it('should not throw error when provided falsy model settings (token is optional)', () => {
+            expect(() => new RulesEngineService(null, new TraceService(false), new CommonService()))
+                .not.toThrowError();
         });
     });
 

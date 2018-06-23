@@ -3,7 +3,6 @@
 ### Functionality
 
 ### Testing
-- debounce
 
 ### Dev Ops
 

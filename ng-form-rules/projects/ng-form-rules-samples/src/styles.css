@@ -18,12 +18,16 @@ pre {
 	border-left-style: solid;
 	margin: 1.7em 0 1.7em 0.3em;
 	overflow: auto;
-	width: 93%;
 }
 
 pre.errors {
+	display: none;
 	border-left-color: #dc3545;
 	background-color: #f3f3f3;
+}
+
+.show-errors pre.errors {
+	display: block;
 }
 
 
