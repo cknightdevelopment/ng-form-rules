@@ -3,6 +3,18 @@
 [![Build Status](https://travis-ci.org/cknightdevelopment/ng-form-rules.svg?branch=master)](https://travis-ci.org/cknightdevelopment/ng-form-rules) 
 [![Coverage Status](https://coveralls.io/repos/github/cknightdevelopment/ng-form-rules/badge.svg)](https://coveralls.io/github/cknightdevelopment/ng-form-rules)
 
+## Installation
+
+`npm install ng-form-rules --save`
+
+## Dependencies
+
+Note: if you are using Angular 6+ these are all installed for you by default. In other words, you are good to go :)
+
+* `@angular/common` version `^6.0.0`
+* `@angular/core` version `^6.0.0`
+* `tslib` version `^1.9.0`
+
 ## What DOES ng-form-rules Do?
 
 _TODO_
@@ -13,27 +25,19 @@ _TODO_
 * Provide angular components, directives, pipes, etc. to display content on a page
 * Provide built-in validation methods (e.g. MaxLength, Required, etc.)
 
-## Installation
-
-`npm install ng-form-rules`
-
-## Dependencies
-
-_Note: if you are using Angular 6+, these are all installed for you by default. In other words, nothing that you won't already have in an Angular app_
-
-* `@angular/common` version `^6.0.0`
-* `@angular/core` version `^6.0.0`
-* `tslib` version `^1.9.0`
-
 ## Getting Started
 
 _TODO_
 
 ## Documentation
 
-[Wiki][link-wiki]
+* [Wiki][link-wiki]
 
 ## Examples
+
+* [StackBlitz][link-stackblitz] - **Amazing** online IDE to see the examples in action and play around with them
+* [Example Repo][link-examples-repo] - Clone the examples to your local machine and take them for a spin
+
 
 <!-- ### Form Rule Thoughts 
 
@@ -87,3 +91,5 @@ In order to run apply form rules properly I need to be provided the correct data
 
 <!-- LINK REFERENCES GO HERE -->
 [link-wiki]: https://github.com/cknightdevelopment/ng-form-rules/wiki
+[link-stackblitz]: https://stackblitz.com/github/cknightdevelopment/ng-form-rules-examples
+[link-examples-repo]: https://github.com/cknightdevelopment/ng-form-rules-examples

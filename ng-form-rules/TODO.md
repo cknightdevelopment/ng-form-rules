@@ -12,8 +12,6 @@
   - contact
   - order
 - readme
-  - installation
-  - dependencies
   - getting started
   - philosophy
   - not _locked in_
