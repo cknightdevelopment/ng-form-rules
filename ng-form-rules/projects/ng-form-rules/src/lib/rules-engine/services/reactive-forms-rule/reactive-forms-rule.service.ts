@@ -291,7 +291,7 @@ export class ReactiveFormsRuleService {
                 )
                 .subscribe(value => {
                     this.setForceAsyncValidationTestForControl(propertyControl, true);
-                    propertyControl.updateValueAndValidity({ onlySelf: false, emitEvent: false });
+                    propertyControl.updateValueAndValidity({ onlySelf: true, emitEvent: false });
                 });
 
             property.addDependencyPropertySubscription(sub$);
