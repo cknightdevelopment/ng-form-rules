@@ -564,7 +564,7 @@ describe('ReactiveFormsRuleService', () => {
                 }),
                 builder.property('name', p => {
                     p.valid.push(builder.validTest<Person>('',
-                        builder.rule(x => x.nicknames[0] !== 'Invalid nickname', { dependencyProperties: ['nicknames.0'] })));
+                        builder.rule(x => x.nicknames[1] !== 'Invalid nickname', { dependencyProperties: ['nicknames.1'] })));
                 })
             ];
         });
@@ -616,8 +616,12 @@ describe('ReactiveFormsRuleService', () => {
             const nameControl = fg.get('name');
             expect(nameControl.valid).toBeTruthy();
 
+            // added to first item, which should still be valid
             svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, "Invalid nickname", { index: 0 });
+            expect(nameControl.valid).toBeTruthy();
 
+            // added another item to the front of the array, bumping "Invalid nickname" to index 1
+            svc.addArrayItemPropertyControl(nicknameArrayItemProperty, nicknamesFormArray, "c", { index: 0 });
             expect(nameControl.valid).toBeFalsy();
             expect(nameControl.errors).toBeTruthy();
         });

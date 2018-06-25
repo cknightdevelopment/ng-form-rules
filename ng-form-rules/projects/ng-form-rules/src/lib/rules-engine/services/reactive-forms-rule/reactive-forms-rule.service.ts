@@ -100,15 +100,12 @@ export class ReactiveFormsRuleService {
         else
             parentFormArray.insert(options.index, control);
 
-        const postAddIndex = willBeLastItem ? parentFormArray.length - 1 : options.index;
-
         const modelSettings = this.getModelSettingsFromForm(parentFormArray.root as FormGroup);
         this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties);
 
-        if (initialValue)
-            parentFormArray
-                .at(postAddIndex)
-                .patchValue(initialValue);
+        // we need to do this because the item could have been added at any index in the array, and we need
+        // trigger a value change to trigger any dependency propertiy valdidations
+        parentFormArray.patchValue(parentFormArray.value);
     }
 
     /**
@@ -151,7 +148,7 @@ export class ReactiveFormsRuleService {
         // setup edit tests on value change
         control.valueChanges
             .pipe(
-                this.blah2(property.valueChangeOptions.self.edit)
+                this.applyValueChangeOptions(property.valueChangeOptions.self.edit)
             )
             .subscribe(value => {
                 this.persistEditTests(control, property);
@@ -211,7 +208,7 @@ export class ReactiveFormsRuleService {
 
         const values = new BehaviorSubject<AbstractControl>(null);
         const valid$ = values.pipe(
-            this.blah1(property.valueChangeOptions.self.asyncValid),
+            this.applyAsyncValidValueChangeOptions(property.valueChangeOptions.self.asyncValid),
             switchMap(x => {
                 return x.passthrough ? of(null) : rawAsyncFunc(x.control);
             }),
@@ -287,7 +284,7 @@ export class ReactiveFormsRuleService {
 
             const sub$ = dependencyControl.valueChanges
                 .pipe(
-                    this.blah2(property.valueChangeOptions.dependencyProperties.valid)
+                    this.applyValueChangeOptions(property.valueChangeOptions.dependencyProperties.valid)
                 )
                 .subscribe(value => {
                     this.setForceAsyncValidationTestForControl(propertyControl, true);
@@ -313,7 +310,7 @@ export class ReactiveFormsRuleService {
             // setup control to perform edit tests when dependency property changes
             const sub$ = dependencyControl.valueChanges
                 .pipe(
-                    this.blah2(property.valueChangeOptions.dependencyProperties.edit)
+                    this.applyValueChangeOptions(property.valueChangeOptions.dependencyProperties.edit)
                 )
                 .subscribe(value => {
                     this.persistEditTests(propertyControl, property);
@@ -342,7 +339,9 @@ export class ReactiveFormsRuleService {
         });
     }
 
-    private blah1(valueChangeOptions: ValueChangeOptions): OperatorFunction<AbstractControl, AsyncValidationPassthroughable> {
+    private applyAsyncValidValueChangeOptions(
+        valueChangeOptions: ValueChangeOptions
+    ): OperatorFunction<AbstractControl, AsyncValidationPassthroughable> {
         return (source$: Observable<AbstractControl>): Observable<AsyncValidationPassthroughable> => {
             let lastValue: any;
             let isForce: boolean;
@@ -370,7 +369,7 @@ export class ReactiveFormsRuleService {
           };
     }
 
-    private blah2(valueChangeOptions: ValueChangeOptions): OperatorFunction<any, any> {
+    private applyValueChangeOptions(valueChangeOptions: ValueChangeOptions): OperatorFunction<any, any> {
         return (source$: Observable<any>): Observable<any> => {
             return source$.pipe(
                 debounce(x => {
