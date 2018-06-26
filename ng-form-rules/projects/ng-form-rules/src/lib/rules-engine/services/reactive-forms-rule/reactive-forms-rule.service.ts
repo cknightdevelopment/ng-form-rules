@@ -72,7 +72,7 @@ export class ReactiveFormsRuleService {
         this.setupDependencySubscriptions(formGroup, settings.properties);
 
         this.traceSvc.trace(`Patching form group with initial value`);
-        if (initialValue) formGroup.patchValue(initialValue);
+        this.triggerValueChange(formGroup);
 
         this.attachModelSettingsToForm(formGroup, settings);
 
@@ -105,7 +105,7 @@ export class ReactiveFormsRuleService {
 
         // we need to do this because the item could have been added at any index in the array, and we need
         // trigger a value change to trigger any dependency propertiy valdidations
-        parentFormArray.patchValue(parentFormArray.value);
+        this.triggerValueChange(parentFormArray);
     }
 
     /**
@@ -488,6 +488,10 @@ export class ReactiveFormsRuleService {
 
     private doesControlHaveForcedAsyncValidation(control: AbstractControl): boolean {
         return !!(control[ReactiveFormsRuleService.FORCE_ASYNC_VALID_TEST_RUN_PROPERTY_NAME]);
+    }
+
+    private triggerValueChange(control: AbstractControl): void {
+        control.patchValue(control.value);
     }
 }
 
