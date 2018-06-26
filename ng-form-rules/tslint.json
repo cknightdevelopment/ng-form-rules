@@ -1,6 +1,7 @@
 {
   "rulesDirectory": [
-    "node_modules/codelyzer"
+    "node_modules/codelyzer",
+    "node_modules/tslint-jasmine-rules/dist"
   ],
   "rules": {
     "arrow-return-shorthand": true,
@@ -11,6 +12,8 @@
       "check-space"
     ],
     // "curly": true,
+    "no-focused-tests": true,
+    "no-disabled-tests": false,
     "deprecation": {
       "severity": "warn"
     },

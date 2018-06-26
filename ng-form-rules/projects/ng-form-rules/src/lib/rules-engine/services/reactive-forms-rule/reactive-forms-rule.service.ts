@@ -6,7 +6,7 @@ import { Property } from "../../../form-rules/models/property";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { PropertyBase } from "../../../form-rules/models/property-base";
 import { TraceService } from "../../../utils/trace/trace.service";
-import { Observable, BehaviorSubject, of, OperatorFunction, timer, empty } from "rxjs";
+import { Observable, BehaviorSubject, of, OperatorFunction, timer, empty, EMPTY } from "rxjs";
 import { map, tap, switchMap, take, distinctUntilChanged, debounce } from "rxjs/operators";
 import { TestResultsBase } from "../../../form-rules/models/test-results-base";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
@@ -354,7 +354,7 @@ export class ReactiveFormsRuleService {
                 debounce(x => {
                     return isForce || valueChangeOptions.debounceMilliseconds > 0
                         ? timer(valueChangeOptions.debounceMilliseconds)
-                        : empty();
+                        : EMPTY;
                 }),
                 map(control => {
                     return {
@@ -375,7 +375,7 @@ export class ReactiveFormsRuleService {
                 debounce(x => {
                     return valueChangeOptions.debounceMilliseconds > 0
                         ? timer(valueChangeOptions.debounceMilliseconds)
-                        : empty();
+                        : EMPTY;
                 }),
                 valueChangeOptions.distinctUntilChanged ? distinctUntilChanged() : tap()
             );
