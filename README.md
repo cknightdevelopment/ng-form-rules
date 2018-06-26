@@ -12,6 +12,7 @@
 * [Getting Started](#getting-started)
 * [Documentation](#docs)
 * [Examples](#examples)
+* [License](#license)
 
 ## <a id="installation"></a> Installation
 
@@ -133,6 +134,9 @@ This was obviously a simple example and we know the real-world demands on forms 
 * [StackBlitz][link-stackblitz] - **Amazing** online IDE to see the examples in action and play around with them
 * [Example Repo][link-examples-repo] - Clone the examples to your local machine and take them for a spin
 
+## <a id="license"></a> License
+
+[MIT License][link-mit-license]
 
 <!-- ### Form Rule Thoughts 
 
@@ -189,3 +193,4 @@ In order to run apply form rules properly I need to be provided the correct data
 [link-stackblitz]: https://stackblitz.com/github/cknightdevelopment/ng-form-rules-examples
 [link-examples-repo]: https://github.com/cknightdevelopment/ng-form-rules-examples
 [link-getting-started]: https://stackblitz.com/edit/ngfr-getting-started?embed=1&file=src/app/app.component.ts
+[link-mit-license]: https://github.com/cknightdevelopment/ng-form-rules/blob/master/LICENSE
