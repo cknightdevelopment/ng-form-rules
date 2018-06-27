@@ -11,7 +11,6 @@ export * from './lib/form-rules/injection-tokens/trace-settings.token';
 
 // services
 export * from './lib/rules-engine/services/reactive-forms-rule/reactive-forms-rule.service';
-// export * from './lib/rules-engine/services/rules-engine/rules-engine.service';
 
 // models
 export * from './lib/form-rules/models/abstract-model-settings';
@@ -33,10 +32,10 @@ export * from './lib/form-rules/models/rule-set';
 export * from './lib/form-rules/models/rule';
 export * from './lib/form-rules/models/test-result';
 export * from './lib/form-rules/models/test-results-base';
-export * from './lib/form-rules/models/test-run-state';
 export * from './lib/form-rules/models/test';
 export * from './lib/form-rules/models/adhoc-model-settings';
 export * from './lib/form-rules/models/add-array-item-property-options';
+export * from './lib/form-rules/models/value-change-options';
 
 // other
 export * from './lib/form-rules/helper/model-settings-builder';

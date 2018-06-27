@@ -2,6 +2,9 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RulesEngineModule } from '../rules-engine/rules-engine.module';
 
+/**
+ * Main module for ng-form-rules
+ */
 @NgModule({
   imports: [
     CommonModule,

@@ -5,7 +5,7 @@ import { Subscription } from "rxjs";
 import { ValueChangeOptions } from "./value-change-options";
 
 /**
- * Base class representing a property
+ * Base class for a property
  */
 export abstract class PropertyBase<T> {
     private _absolutePath: string;

@@ -15,6 +15,11 @@ export class ControlState {
         this._untouched = control.untouched;
     }
 
+    /**
+     * Creates a ControlState object based on an Angular control
+     * @param control Angular control to generate state from
+     * @returns Control state base on Angular control
+     */
     static create(control: AbstractControl): ControlState {
         return new ControlState(control);
     }

@@ -2,7 +2,7 @@ import { ModelSettingsBuilder } from "../helper/model-settings-builder";
 import { Property } from "./property";
 
 /**
- * Base class for ng-form-rules model settings
+ * Base class for model settings
  */
 export abstract class AbstractModelSettings<T> {
     private _name: string;
@@ -15,7 +15,7 @@ export abstract class AbstractModelSettings<T> {
     }
 
     /**
-     * Helper for building the model, properties, etc.
+     * Helper for building properties, tests, and rules
      */
     protected builder: ModelSettingsBuilder;
 
