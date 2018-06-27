@@ -7,7 +7,6 @@
 ### Dev Ops
 
 ### Documentation
-- jsdoc code comments
 
 ### Other
 - blog post
