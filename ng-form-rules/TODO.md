@@ -7,14 +7,6 @@
 ### Dev Ops
 
 ### Documentation
-- sample forms
-  - register
-  - contact
-  - order
-- readme
-  - getting started
-  - philosophy
-  - not _locked in_
 - jsdoc code comments
 
 ### Other

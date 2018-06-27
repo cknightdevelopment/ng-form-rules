@@ -14,11 +14,11 @@
 * [Examples](#examples)
 * [License](#license)
 
-## <a id="installation"></a> Installation
+## <a id="installation"></a>Installation
 
 `npm install ng-form-rules`
 
-## <a id="deps"></a> Dependencies
+## <a id="deps"></a>Dependencies
 
 :information_source: If you are using Angular 6+ these are installed by default. In other words, you are good to go :)
 
@@ -26,7 +26,7 @@
 * `@angular/core` version `^6.0.0`
 * `tslib` version `^1.9.0`
 
-## <a id="do"></a> What does `ng-form-rules` do?
+## <a id="do"></a>What does `ng-form-rules` do?
 
 * Create model settings with rules dictating whether properties are valid and/or editable
     * Rules can be as simple or complex as you want; you have full control
@@ -36,13 +36,13 @@
     * All of the rules in your model settings will automatically be attached to the form.
 * You are never blocked! The form controls we generate are no different than what you already use in Angular. You can manipulate them, add controls, add validators from outside `ng-form-rules`, etc.
 
-## <a id="not-do"></a> What does `ng-form-rules` **NOT** do?
+## <a id="not-do"></a>What does `ng-form-rules` **NOT** do?
 
 * Anything with styling, display, etc.
 * Provide Angular components, directives, pipes, etc. to display on a page
 * Provide a library of validation methods (e.g. MaxLength, Required, etc.)
 
-## <a id="getting-started"></a> Getting Started
+## <a id="getting-started"></a>Getting Started
 
 To use `ng-form-rules` in your app you need to import the `FormRulesModule` into one of your Angular modules (most likely the main `AppModule`).
 
@@ -125,11 +125,11 @@ You did it! You successfully used `ng-form-rules` on your first form! [See it li
 
 This was obviously a simple example and we know the real-world demands on forms are more complex. Please see our [docs](#docs) and [examples](#examples) to learn how you can use `ng-form-rules` to handle all your scenarios.
 
-## <a id="docs"></a> Documentation
+## <a id="docs"></a>Documentation
 
 * [Wiki][link-wiki]
 
-## <a id="examples"></a> Examples
+## <a id="examples"></a>Examples
 
 * [StackBlitz][link-stackblitz] - **Amazing** online IDE to see the examples in action and play around with them
 * [Example Repo][link-examples-repo] - Clone the examples to your local machine and take them for a spin
