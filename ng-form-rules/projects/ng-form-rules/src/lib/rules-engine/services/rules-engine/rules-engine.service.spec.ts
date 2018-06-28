@@ -16,6 +16,7 @@ import { AdhocModelSettings } from '../../../form-rules/models/adhoc-model-setti
 import { Car } from '../../../test-utils/models/car';
 import { TraceService } from '../../../utils/trace/trace.service';
 import { CommonService } from '../../../utils/common/common.service';
+import { ResultsPassRequirement } from '../../../form-rules/models/results-pass-requirement';
 
 
 describe('RulesEngineService', () => {
@@ -209,7 +210,9 @@ describe('RulesEngineService', () => {
                     [
                         builder.rule((x: Person) => !!x.name),
                         builder.rule((x: Person) => !x.name),
-                    ], true
+                    ], {
+                        resultRequirements: ResultsPassRequirement.AnyPass
+                    }
                 );
                 const result = svc.processRuleSet({name: 'Chris'}, ruleGroup);
                 expect(result).toEqual(ProcessResultType.Passed);
@@ -220,7 +223,9 @@ describe('RulesEngineService', () => {
                     [
                         builder.rule((x: Person) => !x.name),
                         builder.rule((x: Person) => !!x.name),
-                    ], true
+                    ], {
+                        resultRequirements: ResultsPassRequirement.AnyPass
+                    }
                 );
                 const result = svc.processRuleSet({name: 'Chris'}, ruleGroup);
                 expect(result).toEqual(ProcessResultType.Passed);
@@ -231,7 +236,9 @@ describe('RulesEngineService', () => {
                     [
                         builder.rule((x: Person) => !!x.name),
                         builder.rule((x: Person) => !!x.name),
-                    ], true
+                    ], {
+                        resultRequirements: ResultsPassRequirement.AnyPass
+                    }
                 );
                 const result = svc.processRuleSet({name: null}, ruleGroup);
                 expect(result).toEqual(ProcessResultType.Failed);
@@ -302,7 +309,9 @@ describe('RulesEngineService', () => {
                     [
                         builder.ruleAsync((x: Person) => of(!!x.name)),
                         builder.ruleAsync((x: Person) => of(!x.name)),
-                    ], true
+                    ], {
+                        resultRequirements: ResultsPassRequirement.AnyPass
+                    }
                 );
                 svc.processRuleSetAsync({name: 'Chris'}, ruleGroup).subscribe(x => {
                     expect(x).toEqual(ProcessResultType.Passed);
@@ -314,7 +323,9 @@ describe('RulesEngineService', () => {
                     [
                         builder.ruleAsync((x: Person) => of(!x.name)),
                         builder.ruleAsync((x: Person) => of(!!x.name)),
-                    ], true
+                    ], {
+                        resultRequirements: ResultsPassRequirement.AnyPass
+                    }
                 );
                 svc.processRuleSetAsync({name: 'Chris'}, ruleGroup).subscribe(x => {
                     expect(x).toEqual(ProcessResultType.Passed);
@@ -326,7 +337,9 @@ describe('RulesEngineService', () => {
                     [
                         builder.ruleAsync((x: Person) => of(!!x.name)),
                         builder.ruleAsync((x: Person) => of(!!x.name)),
-                    ], true
+                    ], {
+                        resultRequirements: ResultsPassRequirement.AnyPass
+                    }
                 );
                 svc.processRuleSetAsync({name: null}, ruleGroup).subscribe(x => {
                     expect(x).toEqual(ProcessResultType.Failed);

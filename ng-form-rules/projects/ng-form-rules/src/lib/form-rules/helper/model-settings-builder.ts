@@ -7,6 +7,8 @@ import { RuleSet } from '../models/rule-set';
 import { RuleFunc } from '../models/rule-func';
 import { RuleOptions } from '../models/rule-options';
 import { AsyncRuleFunc } from '../models/async-rule-func';
+import { RuleGroupOptions } from '../models/rule-group-options';
+import { ResultsPassRequirement } from '../models/results-pass-requirement';
 
 /**
  * Utility class for building model settings
@@ -132,13 +134,13 @@ export class ModelSettingsBuilder {
     /**
      * Creates a rule group
      * @param ruleSets Rule sets for the rule group
-     * @param any Setting that indicates if the rule group should pass if any of the rule sets pass (compared to all of them passing)
+     * @param options Additional rule group options
      * @returns Created rule group
      */
-    ruleGroup<T>(ruleSets: RuleSet<T>[], any?: boolean): RuleGroup<T> {
+    ruleGroup<T>(ruleSets: RuleSet<T>[], options?: RuleGroupOptions): RuleGroup<T> {
         return {
             rules: ruleSets,
-            any: any
+            options: options || { resultRequirements: ResultsPassRequirement.AllPass }
         } as RuleGroup<T>;
     }
 }

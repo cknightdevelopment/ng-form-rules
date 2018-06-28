@@ -68,4 +68,49 @@ export class AppComponent implements OnInit {
             ];
         });
     }
+
+    private blah() {
+        const settings = AdhocModelSettings.create<Rent>(builder => {
+            return [
+                builder.property('showRental', prop => {
+                    prop.valid.push(builder.validTest<Rent>(
+                        'Cannot show rental.',
+                        builder.ruleGroup(
+                            [
+                                builder.rule(x => !x.convictedFelon), // not convicted fellon
+                                builder.ruleGroup(
+                                    [
+                                        builder.rule(x => x.fullYearRentPayment), // has full year's rent
+                                        builder.ruleGroup(
+                                            [
+                                                builder.rule(x => !x.pets), // no pets
+                                                builder.rule(x => !x.smokes) // non-smoker
+                                            ],
+                                            false // both rule sets must pass
+                                        )
+                                    ],
+                                    true // only one rule set must pass
+                                )
+                            ],
+                            false // both rule sets must pass
+                        )
+                    ));
+                }),
+                builder.property('convictedFelon'),
+                builder.property('pets'),
+                builder.property('smokes'),
+                builder.property('goodCreditScore'),
+                builder.property('fullYearRentPayment')
+            ];
+        });
+    }
+}
+
+interface Rent {
+    showRental: boolean;
+    convictedFelon: boolean;
+    pets: boolean;
+    smokes: boolean;
+    goodCreditScore: boolean;
+    fullYearRentPayment: boolean;
 }

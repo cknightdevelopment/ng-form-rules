@@ -17,6 +17,7 @@ import { PropertyTestResults } from '../../../form-rules/models/property-test-re
 import { PropertyBase } from '../../../form-rules/models/property-base';
 import { ProcessResultType } from '../../../form-rules/models/proccess-result-type';
 import { TestSyncGroups } from '../../../form-rules/models/test-sync-groups';
+import { ResultsPassRequirement } from '../../../form-rules/models/results-pass-requirement';
 
 /**
  * Engine that digests model settings and applies their rules appropriately
@@ -349,8 +350,12 @@ export class RulesEngineService {
                     skipped: ruleSetResults.filter(x => x === ProcessResultType.Skipped).length,
                 };
 
-                if (!!ruleGroup.any && counts.passed > 0) return ProcessResultType.Passed;
-                if (!ruleGroup.any && counts.passed === ruleSetResults.length) return ProcessResultType.Passed;
+                const ruleGroupOptions = ruleGroup.options || { resultRequirements: ResultsPassRequirement.AllPass };
+
+                if (ruleGroupOptions.resultRequirements == ResultsPassRequirement.AnyPass && counts.passed > 0)
+                    return ProcessResultType.Passed;
+                if (ruleGroupOptions.resultRequirements == ResultsPassRequirement.AllPass && counts.passed === ruleSetResults.length)
+                    return ProcessResultType.Passed;
                 if (counts.skipped === ruleSetResults.length) return ProcessResultType.Skipped;
 
                 return ProcessResultType.Failed;
@@ -393,8 +398,15 @@ export class RulesEngineService {
     // }
 
     private canShortCircuitRuleGroup<T>(ruleSetResult: ProcessResultType, ruleGroup: RuleGroup<T>): boolean {
-        return (ruleSetResult == ProcessResultType.Passed && ruleGroup.any) // it passed, and we only need one to pass
-            || (ruleSetResult == ProcessResultType.Failed && !ruleGroup.any); // if failed, and we need all to pass
+        const ruleGroupOptions = ruleGroup.options || { resultRequirements: ResultsPassRequirement.AllPass };
+
+        return (
+            // it passed, and we only need one to pass
+            (ruleSetResult == ProcessResultType.Passed && ruleGroupOptions.resultRequirements == ResultsPassRequirement.AnyPass)
+            ||
+            // if failed, and we need all to pass
+            (ruleSetResult == ProcessResultType.Failed && ruleGroupOptions.resultRequirements == ResultsPassRequirement.AllPass)
+        );
     }
 
     private isRuleGroup<T>(ruleSet: RuleSet<T>): boolean {

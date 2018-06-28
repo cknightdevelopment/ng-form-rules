@@ -2,6 +2,7 @@ import { ModelSettingsBuilder } from './model-settings-builder';
 import { of } from 'rxjs';
 import { RuleSet } from '../models/rule-set';
 import { AdhocModelSettings } from '../models/adhoc-model-settings';
+import { ResultsPassRequirement } from '../models/results-pass-requirement';
 
 describe('ModelSettingsBuilder', () => {
     const builder: ModelSettingsBuilder = new ModelSettingsBuilder();
@@ -95,13 +96,13 @@ describe('ModelSettingsBuilder', () => {
         it('should create rule group', () => {
             const ruleGroup = builder.ruleGroup([]);
             expect(ruleGroup.rules).toBeTruthy();
-            expect(ruleGroup.any).toBeFalsy();
+            expect(ruleGroup.options.resultRequirements).toEqual(ResultsPassRequirement.AllPass);
         });
 
         it('should create rule group with options', () => {
-            const ruleGroup = builder.ruleGroup([], true);
+            const ruleGroup = builder.ruleGroup([], { resultRequirements: ResultsPassRequirement.AnyPass });
             expect(ruleGroup.rules).toBeTruthy();
-            expect(ruleGroup.any).toBeTruthy();
+            expect(ruleGroup.options.resultRequirements).toEqual(ResultsPassRequirement.AnyPass);
         });
     });
 

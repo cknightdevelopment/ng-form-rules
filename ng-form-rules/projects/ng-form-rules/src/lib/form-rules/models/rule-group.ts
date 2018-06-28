@@ -1,13 +1,14 @@
 import { RuleSet } from "./rule-set";
+import { RuleGroupOptions } from "./rule-group-options";
 
 /**
  * Collection of rule sets with metadata
  */
 export interface RuleGroup<T> {
     /**
-     * Determines if the rule group should pass if any (one) of its rules pass
+     * Additional rule group options
      */
-    any?: boolean;
+    options?: RuleGroupOptions;
 
     /**
      * Collection of rule sets
