@@ -3,11 +3,6 @@
  */
 export interface ReactiveFormsFailedValdation {
     /**
-     * Name of test
-     */
-    name: string;
-
-    /**
      * Message of test
      */
     message: string;

@@ -46,8 +46,7 @@ export class RulesEngineService {
      */
     initializeModelSetting(setting: AbstractModelSettings<any>): void {
         this.traceSvc.trace(`Initializing model settings "${setting.name}"`);
-        this.setPropertyAbsolutePaths(setting.properties);
-        this.setPropertyOwnerModelSettingsName(setting.name, setting.properties);
+        this.setPropertyMetadata(setting.properties, setting.name);
     }
 
     /**
@@ -152,15 +151,15 @@ export class RulesEngineService {
      * @param property Property to run visibility tests for
      * * @returns Results of visibility tests
      */
-    visible<T>(data: T, property: Property<T>, state?: TestRunState): Observable<PropertyTestResults<T>> {
-        return this.runAllTests(data, property.view, state)
-            .pipe(
-                map((results: PropertyTestResults<T>) => {
-                    results.propertyName = property.absolutePath;
-                    return results as PropertyTestResults<T>;
-                })
-            );
-    }
+    // visible<T>(data: T, property: Property<T>, state?: TestRunState): Observable<PropertyTestResults<T>> {
+    //     return this.runAllTests(data, property.view, state)
+    //         .pipe(
+    //             map((results: PropertyTestResults<T>) => {
+    //                 results.propertyName = property.absolutePath;
+    //                 return results as PropertyTestResults<T>;
+    //             })
+    //         );
+    // }
 
     /**
      * Runs an array of sync tests
@@ -429,38 +428,42 @@ export class RulesEngineService {
         return this.commonSvc.unique(result);
     }
 
-    private setPropertyAbsolutePaths(properties: PropertyBase<any>[], currentAbsolutePath: string = ''): void {
+    private setPropertyMetadata(properties: PropertyBase<any>[], modelSettingsName: string, currentAbsolutePath: string = ''): void {
         if (!properties) return;
 
         properties.forEach(prop => {
-            const isArrayItemProperty = PropertyBase.isArrayItemProperty(prop);
-            const newAbsolutePathSegment = isArrayItemProperty ? '[]' : (prop as Property<any>).name;
-            const isAtRoot = !currentAbsolutePath;
-            const newAbsolutePath = `${currentAbsolutePath}${isAtRoot ? '' : '.'}${newAbsolutePathSegment}`;
-
-            // set absolute path for property
-            prop.setAbsolutePath(newAbsolutePath);
+            const newAbsolutePath = this.setPropertyAbsolutePath(prop, currentAbsolutePath);
+            this.fillInEmptyTestNames(prop);
+            prop.setOwnerModelSettingsName(modelSettingsName);
 
             if (prop.properties) {
-                this.setPropertyAbsolutePaths(prop.properties, newAbsolutePath);
+                this.setPropertyMetadata(prop.properties, modelSettingsName, newAbsolutePath);
             } else if (prop.arrayItemProperty) {
-                this.setPropertyAbsolutePaths([prop.arrayItemProperty], newAbsolutePath);
+                this.setPropertyMetadata([prop.arrayItemProperty], modelSettingsName, newAbsolutePath);
             }
         });
     }
 
-    private setPropertyOwnerModelSettingsName(modelSettingsName: string, properties: PropertyBase<any>[]): void {
-        if (!properties) return;
+    private setPropertyAbsolutePath(property: PropertyBase<any>, currentAbsolutePath: string = ''): string {
+        const isArrayItemProperty = PropertyBase.isArrayItemProperty(property);
+        const newAbsolutePathSegment = isArrayItemProperty ? '[]' : (property as Property<any>).name;
+        const isAtRoot = !currentAbsolutePath;
+        const newAbsolutePath = `${currentAbsolutePath}${isAtRoot ? '' : '.'}${newAbsolutePathSegment}`;
 
-        properties.forEach(prop => {
-            prop.setOwnerModelSettingsName(modelSettingsName);
+        // set absolute path for property
+        property.setAbsolutePath(newAbsolutePath);
 
-            if (prop.properties) {
-                this.setPropertyOwnerModelSettingsName(modelSettingsName, prop.properties);
-            } else if (prop.arrayItemProperty) {
-                this.setPropertyOwnerModelSettingsName(modelSettingsName, [prop.arrayItemProperty]);
-            }
-        });
+        return newAbsolutePath;
+    }
+
+    private fillInEmptyTestNames(property: PropertyBase<any>) {
+        property.valid
+            .filter(test => !test.name)
+            .forEach((test, i) => test.name = `validTest${i}`);
+
+        property.edit
+            .filter(test => !test.name)
+            .forEach((test, i) => test.name = `editTest${i}`);
     }
 
     private getConfiguredFuncTypes<T>(ruleSet: RuleSet<T>): ConfiguredFuncTypes {

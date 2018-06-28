@@ -410,11 +410,16 @@ export class ReactiveFormsRuleService {
         // if passed, Angular reactive forms wants us to return null, otherwise return an object with the validation info
         if (!testResults || testResults.passed) return null;
 
+        const failed: { [key: string]: ReactiveFormsFailedValdation } = {};
+
+        testResults.failedResults.forEach(test => {
+            failed[test.name] = { message: test.message };
+        });
+
         return {
             ngFormRules: {
                 message: testResults.message,
-                failed: testResults.failedResults
-                    .map(x => ({ name: x.name, message: x.message } as ReactiveFormsFailedValdation))
+                failed: failed
             } as ReactiveFormsValidationErrorsData
         };
     }

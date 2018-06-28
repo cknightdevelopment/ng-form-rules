@@ -79,7 +79,24 @@ describe('RulesEngineService', () => {
     describe('initialize model settings', () => {
         const settings = AdhocModelSettings.create<Person>(b => {
             return [
-                b.property('name'),
+                b.property('name', p => {
+                    p.valid.push(builder.validNamedTest(
+                        'my-valid-test-name',
+                        'Error message',
+                        builder.rule(x => !!x)
+                    ));
+                    p.valid.push(builder.validTest(
+                        'Error message',
+                        builder.rule(x => !!x)
+                    ));
+                    p.edit.push(builder.editNamedTest(
+                        'my-edit-test-name',
+                        builder.rule(x => !!x)
+                    ));
+                    p.edit.push(builder.editTest(
+                        builder.rule(x => !!x)
+                    ));
+                }),
                 b.property('age'),
                 b.property('car', p => {
                     p.properties = [
@@ -130,6 +147,18 @@ describe('RulesEngineService', () => {
             expect(settings.properties.length).toEqual(personPropertiesWithOwnerSetCount);
             expect(carProperties.length).toEqual(carPropertiesWithOwnerSet.length);
             expect(nicknameArrayItemProperty.ownerModelSettingsName).toEqual('adhoc');
+        });
+
+        it('should set default names for non-explicitly names tests', () => {
+            svc.initializeModelSetting(settings);
+
+            const nameProperty = settings.properties
+                .find(p => p.name == 'name');
+
+            expect(nameProperty.valid[0].name).toEqual('my-valid-test-name');
+            expect(nameProperty.valid[1].name).toEqual('validTest0');
+            expect(nameProperty.edit[0].name).toEqual('my-edit-test-name');
+            expect(nameProperty.edit[1].name).toEqual('editTest0');
         });
 
         it('should handle property settings with properties set to null', () => {
@@ -571,17 +600,17 @@ describe('RulesEngineService', () => {
         });
     });
 
-    describe('visible', () => {
-        it('should run visible tests', () => {
-            const property = builder.property('name', p => {
-                p.view.push(builder.editTest(builder.rule(x => false)));
-            });
-            svc.visible({}, property)
-                .subscribe(results => {
-                    expect(results.passed).toBeFalsy();
-                });
-        });
-    });
+    // describe('visible', () => {
+    //     it('should run visible tests', () => {
+    //         const property = builder.property('name', p => {
+    //             p.view.push(builder.editTest(builder.rule(x => false)));
+    //         });
+    //         svc.visible({}, property)
+    //             .subscribe(results => {
+    //                 expect(results.passed).toBeFalsy();
+    //             });
+    //     });
+    // });
 
     describe('dependency properties', () => {
         it('should get rule check dependency properties', () => {

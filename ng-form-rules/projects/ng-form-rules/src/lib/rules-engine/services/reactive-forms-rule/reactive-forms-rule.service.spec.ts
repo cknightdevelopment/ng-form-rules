@@ -12,6 +12,7 @@ import { UtilsModule } from "../../../utils/utils.module";
 import { of } from "rxjs";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { AdhocModelSettings } from "../../../form-rules/models/adhoc-model-settings";
+import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
 
 const registeredSettingsKey = 'registeredSettings';
 
@@ -55,239 +56,6 @@ describe('ReactiveFormsRuleService', () => {
 
     it('should be created', () => {
         expect(svc).toBeTruthy();
-    });
-
-    describe('value change options', () => {
-        describe('debounce time', () => {
-            const debounceMilliseconds = 5000;
-            let settings: AbstractModelSettings<Person>;
-            let spies: {
-                depValidFunc: jasmine.Spy,
-                depEditFunc: jasmine.Spy,
-                selfEditFunc: jasmine.Spy,
-                selfAsyncValidFunc: jasmine.Spy
-            };
-            const container = {
-                depValidFunc: (sanityCheck: string) => { },
-                depEditFunc: (sanityCheck: string) => { },
-                selfEditFunc: (sanityCheck: string) => { },
-                selfAsyncValidFunc: (sanityCheck: string) => { },
-            };
-
-            beforeEach(() => {
-                settings = AdhocModelSettings.create<Person>(b => {
-                    return [
-                        b.property('name', p => {
-                            p.valueChangeOptions.dependencyProperties.valid.debounceMilliseconds = debounceMilliseconds;
-                            p.valueChangeOptions.dependencyProperties.edit.debounceMilliseconds = debounceMilliseconds;
-                            p.valueChangeOptions.self.edit.debounceMilliseconds = debounceMilliseconds;
-                            p.valueChangeOptions.self.asyncValid.debounceMilliseconds = debounceMilliseconds;
-
-                            p.valid.push(b.validTest('',
-                                b.rule(x => {
-                                    container.depValidFunc('dep valid');
-                                    return true;
-                                }, { dependencyProperties: ['age'] })));
-
-                            p.edit.push(b.editTest(
-                                b.rule(x => {
-                                    container.depEditFunc('dep edit');
-                                    return true;
-                                }, { dependencyProperties: ['age'] })));
-
-                            p.edit.push(b.editTest(
-                                b.rule(x => {
-                                    container.selfEditFunc('self edit');
-                                    return true;
-                                })));
-
-                            p.valid.push(b.validTest('',
-                                b.ruleAsync(x => {
-                                    container.selfAsyncValidFunc('self valid async');
-                                    return of(true);
-                                })));
-                        }),
-                        b.property('age')
-                    ];
-                });
-
-                spies = {
-                    depValidFunc: spyOn(container, 'depValidFunc'),
-                    depEditFunc: spyOn(container, 'depEditFunc'),
-                    selfEditFunc: spyOn(container, 'selfEditFunc'),
-                    selfAsyncValidFunc: spyOn(container, 'selfAsyncValidFunc'),
-                };
-            });
-
-            it('should honor setting for valid dependency changes', fakeAsync(() => {
-                const form = svc.createFormGroup(settings);
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-                spies.depValidFunc.calls.reset();
-
-                form.get('age').setValue(100);
-                expect(spies.depValidFunc).not.toHaveBeenCalled();
-
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-
-                expect(spies.depValidFunc).toHaveBeenCalledTimes(1);
-                expect(spies.depValidFunc).toHaveBeenCalledWith('dep valid');
-            }));
-
-            it('should honor setting for edit dependency changes', fakeAsync(() => {
-                const form = svc.createFormGroup(settings);
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-                spies.depEditFunc.calls.reset();
-
-                form.get('age').setValue(100);
-                expect(spies.depEditFunc).not.toHaveBeenCalled();
-
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-
-                expect(spies.depEditFunc).toHaveBeenCalledTimes(1);
-                expect(spies.depEditFunc).toHaveBeenCalledWith('dep edit');
-            }));
-
-            it('should honor setting for edit self changes', fakeAsync(() => {
-                const form = svc.createFormGroup(settings);
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-                spies.selfEditFunc.calls.reset();
-
-                form.get('name').setValue('Chris');
-                expect(spies.selfEditFunc).not.toHaveBeenCalled();
-
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-
-                expect(spies.selfEditFunc).toHaveBeenCalledTimes(1);
-                expect(spies.selfEditFunc).toHaveBeenCalledWith('self edit');
-            }));
-
-            it('should honor setting for valid async self changes', fakeAsync(() => {
-                const form = svc.createFormGroup(settings);
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-                spies.selfAsyncValidFunc.calls.reset();
-
-                form.get('name').setValue('Chris');
-                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
-
-                tick(debounceMilliseconds);
-                discardPeriodicTasks();
-
-                expect(spies.selfAsyncValidFunc).toHaveBeenCalledTimes(1);
-                expect(spies.selfAsyncValidFunc).toHaveBeenCalledWith('self valid async');
-            }));
-        });
-
-        describe('distinct until changed', () => {
-            let settings: AbstractModelSettings<Person>;
-            let spies: {
-                depValidFunc: jasmine.Spy,
-                depEditFunc: jasmine.Spy,
-                selfEditFunc: jasmine.Spy,
-                selfAsyncValidFunc: jasmine.Spy
-            };
-            const container = {
-                depValidFunc: (sanityCheck: string) => { },
-                depEditFunc: (sanityCheck: string) => { },
-                selfEditFunc: (sanityCheck: string) => { },
-                selfAsyncValidFunc: (sanityCheck: string) => { },
-            };
-
-            beforeEach(() => {
-                settings = AdhocModelSettings.create<Person>(b => {
-                    return [
-                        b.property('name', p => {
-                            p.valueChangeOptions.dependencyProperties.valid.distinctUntilChanged = true;
-                            p.valueChangeOptions.dependencyProperties.edit.distinctUntilChanged = true;
-                            p.valueChangeOptions.self.edit.distinctUntilChanged = true;
-                            p.valueChangeOptions.self.asyncValid.distinctUntilChanged = true;
-
-                            p.valid.push(b.validTest('',
-                                b.rule(x => {
-                                    container.depValidFunc('dep valid');
-                                    return true;
-                                }, { dependencyProperties: ['age'] })));
-
-                            p.edit.push(b.editTest(
-                                b.rule(x => {
-                                    container.depEditFunc('dep edit');
-                                    return true;
-                                }, { dependencyProperties: ['age'] })));
-
-                            p.edit.push(b.editTest(
-                                b.rule(x => {
-                                    container.selfEditFunc('self edit');
-                                    return true;
-                                })));
-
-                            p.valid.push(b.validTest('',
-                                b.ruleAsync(x => {
-                                    container.selfAsyncValidFunc('self valid async');
-                                    return of(true);
-                                })));
-                        }),
-                        b.property('age')
-                    ];
-                });
-
-                spies = {
-                    depValidFunc: spyOn(container, 'depValidFunc'),
-                    depEditFunc: spyOn(container, 'depEditFunc'),
-                    selfEditFunc: spyOn(container, 'selfEditFunc'),
-                    selfAsyncValidFunc: spyOn(container, 'selfAsyncValidFunc'),
-                };
-            });
-
-            it('should honor setting for valid dependency changes', () => {
-                const form = svc.createFormGroup(settings);
-                form.get('age').setValue(100);
-                expect(spies.depValidFunc).toHaveBeenCalledWith('dep valid');
-
-                spies.depValidFunc.calls.reset();
-
-                form.get('age').setValue(100);
-                expect(spies.depValidFunc).not.toHaveBeenCalled();
-            });
-
-            it('should honor setting for edit dependency changes', () => {
-                const form = svc.createFormGroup(settings);
-                form.get('age').setValue(100);
-                expect(spies.depEditFunc).toHaveBeenCalledWith('dep edit');
-
-                spies.depEditFunc.calls.reset();
-
-                form.get('age').setValue(100);
-                expect(spies.depEditFunc).not.toHaveBeenCalled();
-            });
-
-            it('should honor setting for edit self changes', () => {
-                const form = svc.createFormGroup(settings);
-                form.get('name').setValue('Chris');
-                expect(spies.selfEditFunc).toHaveBeenCalledWith('self edit');
-
-                spies.selfEditFunc.calls.reset();
-
-                form.get('name').patchValue('Chris');
-                expect(spies.selfEditFunc).not.toHaveBeenCalled();
-            });
-
-            it('should honor setting for async valid self changes', () => {
-                const form = svc.createFormGroup(settings);
-                form.get('name').setValue('Chris');
-                expect(spies.selfAsyncValidFunc).toHaveBeenCalledWith('self valid async');
-
-                spies.selfAsyncValidFunc.calls.reset();
-
-                form.get('name').patchValue('Chris');
-                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
-            });
-        });
     });
 
     describe('get model settings', () => {
@@ -381,6 +149,78 @@ describe('ReactiveFormsRuleService', () => {
         });
     });
 
+    describe('reactive forms error output', () => {
+        it('should return null when all tests pass', () => {
+            const settings = AdhocModelSettings.create<Person>(builder => {
+                return [
+                    builder.property('name', p => {
+                        p.valid.push(builder.validTest<Person>(
+                            'Boo',
+                            builder.rule(x => true)
+                        ));
+                    })
+                ];
+            });
+
+            const fg = svc.createFormGroup(settings);
+            expect(fg.get('name').errors).toBeNull();
+        });
+
+        it('should return error data for failed tests', () => {
+            const settings = AdhocModelSettings.create<Person>(builder => {
+                return [
+                    builder.property('name', p => {
+                        p.valid.push(builder.validNamedTest<Person>(
+                            'my-name-test',
+                            'Boo1',
+                            builder.rule(x => false)
+                        ));
+                        p.valid.push(builder.validTest<Person>(
+                            'Boo2',
+                            builder.rule(x => false)
+                        ));
+                        p.valid.push(builder.validNamedTest<Person>(
+                            'my-name-test2',
+                            'Boo3',
+                            builder.rule(x => false)
+                        ));
+                        p.valid.push(builder.validTest<Person>(
+                            'Boo4',
+                            builder.rule(x => false)
+                        ));
+                        // this test always passes
+                        p.valid.push(builder.validTest<Person>(
+                            'Boo5',
+                            builder.rule(x => true)
+                        ));
+                    })
+                ];
+            });
+
+            const fg = svc.createFormGroup(settings);
+
+            expect(fg.get('name').errors).toEqual({
+                ngFormRules: {
+                    message: 'Boo1',
+                    failed: {
+                        'my-name-test': {
+                            message: 'Boo1'
+                        },
+                        'validTest0': {
+                            message: 'Boo2'
+                        },
+                        'my-name-test2': {
+                            message: 'Boo3'
+                        },
+                        'validTest1': {
+                            message: 'Boo4'
+                        }
+                    }
+                }
+            } as ReactiveFormsValidationErrors);
+        });
+    });
+
     describe('valid', () => {
         const settings = AdhocModelSettings.create<Person>(builder => {
             return [
@@ -411,9 +251,15 @@ describe('ReactiveFormsRuleService', () => {
             ];
         });
 
+        let fg: FormGroup;
+
+        beforeEach(() => {
+            fg = svc.createFormGroup(settings);
+        });
+
         describe('dependency property reactions', () => {
+
             it('should react to same level property change', () => {
-                const fg = svc.createFormGroup(settings);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
@@ -424,7 +270,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to parent property change (non-array item)', () => {
-                const fg = svc.createFormGroup(settings);
                 const yearControl = fg.get('car.year');
 
                 expect(yearControl.valid).toBeTruthy();
@@ -435,7 +280,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to parent property change (array item)', () => {
-                const fg = svc.createFormGroup(settings);
                 const firstNicknameControl = fg.get('nicknames.0');
 
                 expect(firstNicknameControl.valid).toBeTruthy();
@@ -446,7 +290,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to child property change', () => {
-                const fg = svc.createFormGroup(settings);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
@@ -457,7 +300,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to array item change', () => {
-                const fg = svc.createFormGroup(settings);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
@@ -764,6 +606,239 @@ describe('ReactiveFormsRuleService', () => {
                 nameControl.setValue('Whatever');
 
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
+            });
+        });
+    });
+
+    describe('value change options', () => {
+        describe('debounce time', () => {
+            const debounceMilliseconds = 5000;
+            let settings: AbstractModelSettings<Person>;
+            let spies: {
+                depValidFunc: jasmine.Spy,
+                depEditFunc: jasmine.Spy,
+                selfEditFunc: jasmine.Spy,
+                selfAsyncValidFunc: jasmine.Spy
+            };
+            const container = {
+                depValidFunc: (sanityCheck: string) => { },
+                depEditFunc: (sanityCheck: string) => { },
+                selfEditFunc: (sanityCheck: string) => { },
+                selfAsyncValidFunc: (sanityCheck: string) => { },
+            };
+
+            beforeEach(() => {
+                settings = AdhocModelSettings.create<Person>(b => {
+                    return [
+                        b.property('name', p => {
+                            p.valueChangeOptions.dependencyProperties.valid.debounceMilliseconds = debounceMilliseconds;
+                            p.valueChangeOptions.dependencyProperties.edit.debounceMilliseconds = debounceMilliseconds;
+                            p.valueChangeOptions.self.edit.debounceMilliseconds = debounceMilliseconds;
+                            p.valueChangeOptions.self.asyncValid.debounceMilliseconds = debounceMilliseconds;
+
+                            p.valid.push(b.validTest('',
+                                b.rule(x => {
+                                    container.depValidFunc('dep valid');
+                                    return true;
+                                }, { dependencyProperties: ['age'] })));
+
+                            p.edit.push(b.editTest(
+                                b.rule(x => {
+                                    container.depEditFunc('dep edit');
+                                    return true;
+                                }, { dependencyProperties: ['age'] })));
+
+                            p.edit.push(b.editTest(
+                                b.rule(x => {
+                                    container.selfEditFunc('self edit');
+                                    return true;
+                                })));
+
+                            p.valid.push(b.validTest('',
+                                b.ruleAsync(x => {
+                                    container.selfAsyncValidFunc('self valid async');
+                                    return of(true);
+                                })));
+                        }),
+                        b.property('age')
+                    ];
+                });
+
+                spies = {
+                    depValidFunc: spyOn(container, 'depValidFunc'),
+                    depEditFunc: spyOn(container, 'depEditFunc'),
+                    selfEditFunc: spyOn(container, 'selfEditFunc'),
+                    selfAsyncValidFunc: spyOn(container, 'selfAsyncValidFunc'),
+                };
+            });
+
+            it('should honor setting for valid dependency changes', fakeAsync(() => {
+                const form = svc.createFormGroup(settings);
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+                spies.depValidFunc.calls.reset();
+
+                form.get('age').setValue(100);
+                expect(spies.depValidFunc).not.toHaveBeenCalled();
+
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+
+                expect(spies.depValidFunc).toHaveBeenCalledTimes(1);
+                expect(spies.depValidFunc).toHaveBeenCalledWith('dep valid');
+            }));
+
+            it('should honor setting for edit dependency changes', fakeAsync(() => {
+                const form = svc.createFormGroup(settings);
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+                spies.depEditFunc.calls.reset();
+
+                form.get('age').setValue(100);
+                expect(spies.depEditFunc).not.toHaveBeenCalled();
+
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+
+                expect(spies.depEditFunc).toHaveBeenCalledTimes(1);
+                expect(spies.depEditFunc).toHaveBeenCalledWith('dep edit');
+            }));
+
+            it('should honor setting for edit self changes', fakeAsync(() => {
+                const form = svc.createFormGroup(settings);
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+                spies.selfEditFunc.calls.reset();
+
+                form.get('name').setValue('Chris');
+                expect(spies.selfEditFunc).not.toHaveBeenCalled();
+
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+
+                expect(spies.selfEditFunc).toHaveBeenCalledTimes(1);
+                expect(spies.selfEditFunc).toHaveBeenCalledWith('self edit');
+            }));
+
+            it('should honor setting for valid async self changes', fakeAsync(() => {
+                const form = svc.createFormGroup(settings);
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+                spies.selfAsyncValidFunc.calls.reset();
+
+                form.get('name').setValue('Chris');
+                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
+
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+
+                expect(spies.selfAsyncValidFunc).toHaveBeenCalledTimes(1);
+                expect(spies.selfAsyncValidFunc).toHaveBeenCalledWith('self valid async');
+            }));
+        });
+
+        describe('distinct until changed', () => {
+            let settings: AbstractModelSettings<Person>;
+            let spies: {
+                depValidFunc: jasmine.Spy,
+                depEditFunc: jasmine.Spy,
+                selfEditFunc: jasmine.Spy,
+                selfAsyncValidFunc: jasmine.Spy
+            };
+            const container = {
+                depValidFunc: (sanityCheck: string) => { },
+                depEditFunc: (sanityCheck: string) => { },
+                selfEditFunc: (sanityCheck: string) => { },
+                selfAsyncValidFunc: (sanityCheck: string) => { },
+            };
+
+            beforeEach(() => {
+                settings = AdhocModelSettings.create<Person>(b => {
+                    return [
+                        b.property('name', p => {
+                            p.valueChangeOptions.dependencyProperties.valid.distinctUntilChanged = true;
+                            p.valueChangeOptions.dependencyProperties.edit.distinctUntilChanged = true;
+                            p.valueChangeOptions.self.edit.distinctUntilChanged = true;
+                            p.valueChangeOptions.self.asyncValid.distinctUntilChanged = true;
+
+                            p.valid.push(b.validTest('',
+                                b.rule(x => {
+                                    container.depValidFunc('dep valid');
+                                    return true;
+                                }, { dependencyProperties: ['age'] })));
+
+                            p.edit.push(b.editTest(
+                                b.rule(x => {
+                                    container.depEditFunc('dep edit');
+                                    return true;
+                                }, { dependencyProperties: ['age'] })));
+
+                            p.edit.push(b.editTest(
+                                b.rule(x => {
+                                    container.selfEditFunc('self edit');
+                                    return true;
+                                })));
+
+                            p.valid.push(b.validTest('',
+                                b.ruleAsync(x => {
+                                    container.selfAsyncValidFunc('self valid async');
+                                    return of(true);
+                                })));
+                        }),
+                        b.property('age')
+                    ];
+                });
+
+                spies = {
+                    depValidFunc: spyOn(container, 'depValidFunc'),
+                    depEditFunc: spyOn(container, 'depEditFunc'),
+                    selfEditFunc: spyOn(container, 'selfEditFunc'),
+                    selfAsyncValidFunc: spyOn(container, 'selfAsyncValidFunc'),
+                };
+            });
+
+            it('should honor setting for valid dependency changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('age').setValue(100);
+                expect(spies.depValidFunc).toHaveBeenCalledWith('dep valid');
+
+                spies.depValidFunc.calls.reset();
+
+                form.get('age').setValue(100);
+                expect(spies.depValidFunc).not.toHaveBeenCalled();
+            });
+
+            it('should honor setting for edit dependency changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('age').setValue(100);
+                expect(spies.depEditFunc).toHaveBeenCalledWith('dep edit');
+
+                spies.depEditFunc.calls.reset();
+
+                form.get('age').setValue(100);
+                expect(spies.depEditFunc).not.toHaveBeenCalled();
+            });
+
+            it('should honor setting for edit self changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('name').setValue('Chris');
+                expect(spies.selfEditFunc).toHaveBeenCalledWith('self edit');
+
+                spies.selfEditFunc.calls.reset();
+
+                form.get('name').patchValue('Chris');
+                expect(spies.selfEditFunc).not.toHaveBeenCalled();
+            });
+
+            it('should honor setting for async valid self changes', () => {
+                const form = svc.createFormGroup(settings);
+                form.get('name').setValue('Chris');
+                expect(spies.selfAsyncValidFunc).toHaveBeenCalledWith('self valid async');
+
+                spies.selfAsyncValidFunc.calls.reset();
+
+                form.get('name').patchValue('Chris');
+                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
             });
         });
     });

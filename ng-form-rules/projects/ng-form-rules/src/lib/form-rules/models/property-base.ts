@@ -25,7 +25,7 @@ export abstract class PropertyBase<T> {
     /**
      * Viewability tests
      */
-    view: Test<T>[] = [];
+    // view: Test<T>[] = [];
 
     /**
      * Properties for a complex object

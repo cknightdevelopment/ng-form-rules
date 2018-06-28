@@ -12,5 +12,5 @@ export interface ReactiveFormsValidationErrorsData {
     /**
      * Data for each failed test
      */
-    failed: ReactiveFormsFailedValdation[];
+    failed: { [key: string]: ReactiveFormsFailedValdation };
 }
