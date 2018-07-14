@@ -308,6 +308,37 @@ describe('ReactiveFormsRuleService', () => {
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
                 expect(nameControl.errors.ngFormRules.message).toEqual('Nicknames 0 dependency cause');
             });
+
+            it('should handle bad dependency property values', () => {
+                const badDepPropSettings = AdhocModelSettings.create<any>(builder => {
+                    return [
+                        builder.property('prop', p => {
+                            p.valid.push(builder.validTest('',
+                                builder.rule(x => true, {
+                                    dependencyProperties: [
+                                        null,
+                                        {} as any,
+                                        'badPropertyName',
+                                        '../../outOfBounds',
+                                        'arrayProp.999'
+                                    ]
+                                })));
+                        }),
+                        builder.property('arrayProp', p => {
+                            p.arrayItemProperty = builder.arrayItemProperty<string>();
+                        }),
+                    ];
+                });
+
+                const form = svc.createFormGroup(badDepPropSettings);
+
+                expect(() => {
+                    form.get('prop').patchValue(123);
+                    form.get('arrayProp').patchValue([123]);
+                }).not.toThrowError();
+
+                expect(form.valid).toBeTruthy();
+            });
         });
     });
 

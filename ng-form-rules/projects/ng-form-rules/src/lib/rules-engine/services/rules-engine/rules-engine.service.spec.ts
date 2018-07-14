@@ -709,6 +709,24 @@ describe('RulesEngineService', () => {
             expect(results.async.length).toEqual(1);
         });
 
+        it('should group sync and async tests in rule groups', () => {
+            const groupWithSync = builder.ruleGroup([
+                syncRule
+            ]);
+
+            const groupWithAsync = builder.ruleGroup([
+                asyncRule
+            ]);
+
+            const tests = [
+                builder.validTest('test1', groupWithSync),
+                builder.validTest('test2', groupWithAsync),
+            ];
+            const results = svc.groupTestsBySyncType(tests);
+            expect(results.sync.length).toEqual(1);
+            expect(results.async.length).toEqual(1);
+        });
+
         it('should group as async when async rule exists in the test', () => {
             const tests = [
                 builder.validTest('test1', syncRule, asyncRule),
