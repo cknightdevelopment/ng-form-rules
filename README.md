@@ -130,7 +130,7 @@ This was obviously a simple example and we know the real-world demands on forms 
 
 ## <a id="examples"></a>Examples
 
-We have links to pertinent examples throughout our [documentation][link-wiki], or you can just pick from a [list of our examples][link-examples]. We use StackBlitz for all our examples, which allows you to fully interact, fork, edit, etc. them.
+We have links to pertinent examples throughout our [documentation][link-wiki], or you can just pick from a [list of our examples][link-examples]. We use StackBlitz for all our examples, which allows you to fully interact, fork, and edit them.
 
 ## <a id="license"></a> [License][link-mit-license]
 
