@@ -135,9 +135,6 @@ This was obviously a simple example and we know the real-world demands on forms 
 
 ## <a id="license"></a> [License][link-mit-license]
 
-In order to run apply form rules properly I need to be provided the correct data **context**. Does the nested child property need to know about a property on the parent? Do we need to be able to reach into an array? -->
-
-
 <!-- LINK REFERENCES GO HERE -->
 [link-wiki]: https://github.com/cknightdevelopment/ng-form-rules/wiki
 [link-stackblitz]: https://stackblitz.com/github/cknightdevelopment/ng-form-rules-examples
