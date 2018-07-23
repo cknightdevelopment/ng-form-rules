@@ -130,13 +130,13 @@ This was obviously a simple example and we know the real-world demands on forms 
 
 ## <a id="examples"></a>Examples
 
-* [StackBlitz][link-stackblitz] - **Amazing** online IDE to see the examples in action and play around with them
-* [Example Repo][link-examples-repo] - Clone the examples to your local machine and take them for a spin
+We have links to pertinent examples throughout our [documentation][link-wiki], or you can just pick from a [list of our examples][link-examples]. We use StackBlitz for all our examples, which allows you to fully interact, fork, edit, etc. them.
 
 ## <a id="license"></a> [License][link-mit-license]
 
 <!-- LINK REFERENCES GO HERE -->
 [link-wiki]: https://github.com/cknightdevelopment/ng-form-rules/wiki
+[link-examples]: https://github.com/cknightdevelopment/ng-form-rules/wiki/examples
 [link-stackblitz]: https://stackblitz.com/github/cknightdevelopment/ng-form-rules-examples
 [link-examples-repo]: https://github.com/cknightdevelopment/ng-form-rules-examples
 [link-getting-started]: https://stackblitz.com/edit/ngfr-getting-started?embed=1&file=src/app/app.component.ts
