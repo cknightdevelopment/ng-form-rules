@@ -126,65 +126,14 @@ You did it! You successfully used `ng-form-rules` on your first form! [See it li
 
 This was obviously a simple example and we know the real-world demands on forms are more complex. Please see our [docs](#docs) and [examples](#examples) to learn how you can use `ng-form-rules` to handle all your scenarios.
 
-## <a id="docs"></a>Documentation
-
-* [Wiki][link-wiki]
+## <a id="docs"></a> [Documentation][link-wiki]
 
 ## <a id="examples"></a>Examples
 
 * [StackBlitz][link-stackblitz] - **Amazing** online IDE to see the examples in action and play around with them
 * [Example Repo][link-examples-repo] - Clone the examples to your local machine and take them for a spin
 
-## <a id="license"></a> License
-
-[MIT License][link-mit-license]
-
-<!-- ### Form Rule Thoughts 
-
-A couple things matter to me concerning form rules:
-
-1. Is the data **valid**?
-2. Is the data **editable**?
-3. Is the data **visible**?
-
-In order to answer these questions I need a few pieces of functionality:
-
-1. Checks
-2. Conditions
-3. Messaging
-
-Form data objects come in many varieties:
-
-- Simple type 
-```
-"Joe"
-```
-- Flat object 
-```
-{ name: "Joe", age: 30 }
-```
-- Nested objects 
-```
-{ 
-  name: "Joe", 
-  age: 30, 
-  car: { 
-    make: "Subaru", 
-    year: 2015, 
-    dealership: { 
-      name: "Super Subaru" 
-    } 
-  } 
-}
-```
-- Arrays 
-```
-[
-  { name: "Joe" }, 
-  { name: "Mike" }, 
-  { name: "Sarah" }
-]
-```
+## <a id="license"></a> [License][link-mit-license]
 
 In order to run apply form rules properly I need to be provided the correct data **context**. Does the nested child property need to know about a property on the parent? Do we need to be able to reach into an array? -->
 
