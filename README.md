@@ -4,6 +4,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/cknightdevelopment/ng-form-rules/badge.svg)](https://coveralls.io/github/cknightdevelopment/ng-form-rules) 
 [![Join the chat at https://gitter.im/ng-form-rules/Lobby](https://badges.gitter.im/ng-form-rules/Lobby.svg)](https://gitter.im/ng-form-rules/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+Simple, powerful, and customizable rule engine library for Angular reactive forms.
+
 ## Table of Contents
 
 * [Installation](#installation)
