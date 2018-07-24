@@ -47,6 +47,8 @@ Simple, powerful, and customizable rule engine library for Angular reactive form
 
 ## <a id="getting-started"></a>Getting Started
 
+[View example in action][sb-getting-started]
+
 To use `ng-form-rules` in your app you need to import the `FormRulesModule` into one of your Angular modules (most likely the main `AppModule`).
 
 ```typescript
@@ -68,10 +70,10 @@ Now that Angular _knows_ about `ng-form-rules` you can use its functionality in 
 
 ```typescript
 import { Component, OnInit } from '@angular/core';
-import { FormGroup } from "@angular/forms";
+import { FormGroup, AbstractControl } from "@angular/forms";
 import { ReactiveFormsRuleService, AdhocModelSettings, ModelSettingsBuilder } from 'ng-form-rules';
 
-// model representing our form data
+// model representing form data
 interface Person {
   name: string;
 }
@@ -84,7 +86,7 @@ interface Person {
 export class AppComponent implements OnInit  {
   form: FormGroup;
 
-  // receive an instance of ReactiveFormsRuleService
+  // receive an instance of ReactiveFormsRuleService via dependency injection
   constructor(private svc: ReactiveFormsRuleService) {
   }
 
@@ -95,10 +97,12 @@ export class AppComponent implements OnInit  {
       return [
         builder.property('name', prop => { // add a name property to the settings
           prop.valid.push( // add validation to the name property
-            builder.validTest( // add a test to the validation with a message and rule
-              `What's your name? ... Mulva?`,
+            builder.validNamedTest( // add a test to the validation with a name, message, and rule
+              'name-required-test',
+              `Name is required.`,
               builder.rule(person => !!person.name)
-            ));
+            )
+          );
         }),
       ];
     });
@@ -107,7 +111,6 @@ export class AppComponent implements OnInit  {
     this.form = this.svc.createFormGroup(settings);
   }
 }
-
 ```
 
 `AppComponent` receives an instance of `ReactiveFormsRuleService` in its constructor. `ReactiveFormsRuleService` is the primary service used from `ng-form-rules` and it will be your best friend. Within the component's `ngOnInit()` you use this service to create model settings and then a `FormGroup` based upon those settings.
@@ -118,13 +121,15 @@ Now you can use the `FormGroup` in a template.
 
 ```html
 <form [formGroup]="form">
-  <label for="name">Name</label>
-  <input type="text" id="name" formControlName="name" />
-  <pre>{{ form.get('name').errors | json }}</pre>
+	<div>
+		<label for="name">Name: </label>
+		<input type="text" id="name" formControlName="name" />
+		<pre *ngIf="form.get('name').errors">{{ form.get('name').errors | json }}</pre>
+	</div>
 </form>
 ```
 
-You did it! You successfully used `ng-form-rules` on your first form! [See it live in action][link-getting-started].
+You did it! You successfully used `ng-form-rules` on your first form!
 
 This was obviously a simple example and we know the real-world demands on forms are more complex. Please see our [docs](#docs) and [examples](#examples) to learn how you can use `ng-form-rules` to handle all your scenarios.
 
@@ -143,3 +148,4 @@ We have links to pertinent examples throughout our [documentation][link-wiki], o
 [link-examples-repo]: https://github.com/cknightdevelopment/ng-form-rules-examples
 [link-getting-started]: https://stackblitz.com/edit/ngfr-getting-started?embed=1&file=src/app/app.component.ts
 [link-mit-license]: https://github.com/cknightdevelopment/ng-form-rules/blob/master/LICENSE
+[sb-getting-started]: https://stackblitz.com/edit/ngfr-getting-started?file=src%2Fapp%2Fapp.component.ts
