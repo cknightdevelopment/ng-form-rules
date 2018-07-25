@@ -3,7 +3,7 @@ import { FormGroup } from "@angular/forms";
 import { ReactiveFormsRuleService, AbstractModelSettings, Property } from 'ng-form-rules';
 
 @Component({
-    selector: 'samples-getting-started',
+    selector: 'playground-getting-started',
     templateUrl: 'getting-started.component.html'
 })
 export class GettingStartedComponent implements OnInit {

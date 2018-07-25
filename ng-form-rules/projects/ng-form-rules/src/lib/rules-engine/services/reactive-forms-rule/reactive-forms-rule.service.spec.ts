@@ -47,7 +47,7 @@ describe('ReactiveFormsRuleService', () => {
                         new RegisteredSettings(registeredSettingsKey),
                     ]
                 },
-                { provide: TRACE_SETTINGS_TOKEN, useValue: true }
+                { provide: TRACE_SETTINGS_TOKEN, useValue: false }
             ]
         });
 
@@ -231,7 +231,7 @@ describe('ReactiveFormsRuleService', () => {
                     p.valid.push(builder.validTest<Person>('Car make dependency cause',
                         builder.rule(x => !x.car.make, { dependencyProperties: ['./car.make'] })));
                     p.valid.push(builder.validTest<Person>('Nicknames 0 dependency cause',
-                        builder.rule(x => !x.nicknames[0], { dependencyProperties: ['nicknames.0'] })));
+                        builder.rule(x => x.nicknames[0] == 'MyNickname', { dependencyProperties: ['nicknames.0'] })));
                 }),
                 builder.property('car', p => {
                     p.properties = [
@@ -254,7 +254,7 @@ describe('ReactiveFormsRuleService', () => {
         let fg: FormGroup;
 
         beforeEach(() => {
-            fg = svc.createFormGroup(settings);
+            fg = svc.createFormGroup(settings, { nicknames: ['MyNickname'] });
         });
 
         describe('dependency property reactions', () => {
@@ -264,6 +264,7 @@ describe('ReactiveFormsRuleService', () => {
 
                 expect(nameControl.valid).toBeTruthy();
                 fg.patchValue({ age: 1 });
+
                 expect(nameControl.valid).toBeFalsy();
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
                 expect(nameControl.errors.ngFormRules.message).toEqual('Age dependency cause');
@@ -303,7 +304,7 @@ describe('ReactiveFormsRuleService', () => {
                 const nameControl = fg.get('name');
 
                 expect(nameControl.valid).toBeTruthy();
-                fg.patchValue({ nicknames: ["Value"] });
+                fg.patchValue({ nicknames: ["BadNickname"] });
                 expect(nameControl.valid).toBeFalsy();
                 expect(nameControl.errors.ngFormRules).toBeTruthy();
                 expect(nameControl.errors.ngFormRules.message).toEqual('Nicknames 0 dependency cause');
@@ -353,7 +354,7 @@ describe('ReactiveFormsRuleService', () => {
                         p.edit.push(builder.editTest<Person>(
                             builder.rule(x => !x.car.make, { dependencyProperties: ['./car.make'] })));
                         p.edit.push(builder.editTest<Person>(
-                            builder.rule(x => !x.nicknames[0], { dependencyProperties: ['/nicknames.0'] })));
+                            builder.rule(x => x.nicknames[0] == 'MyNickname', { dependencyProperties: ['/nicknames.0'] })));
                     }),
                     builder.property('car', p => {
                         p.properties = [
@@ -373,8 +374,13 @@ describe('ReactiveFormsRuleService', () => {
                 ];
             });
 
+            let fg: FormGroup;
+
+            beforeEach(() => {
+                fg = svc.createFormGroup(settings, { nicknames: ['MyNickname'] });
+            });
+
             it('should react to same level property change', () => {
-                const fg = svc.createFormGroup(settings);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
@@ -383,7 +389,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to parent property change (non-array item)', () => {
-                const fg = svc.createFormGroup(settings);
                 const yearControl = fg.get('car.year');
 
                 expect(yearControl.enabled).toBeTruthy();
@@ -392,7 +397,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to parent property change (array item)', () => {
-                const fg = svc.createFormGroup(settings);
                 const firstNicknameControl = fg.get('nicknames.0');
 
                 expect(firstNicknameControl.enabled).toBeTruthy();
@@ -401,7 +405,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to child property change', () => {
-                const fg = svc.createFormGroup(settings);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
@@ -410,7 +413,6 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should react to array item change', () => {
-                const fg = svc.createFormGroup(settings);
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeTruthy();
@@ -419,7 +421,7 @@ describe('ReactiveFormsRuleService', () => {
             });
 
             it('should re-enabled a disabled control when tests pass', () => {
-                const fg = svc.createFormGroup(settings, { age: 1 });
+                fg.patchValue({ age: 1 });
                 const nameControl = fg.get('name');
 
                 expect(nameControl.enabled).toBeFalsy();

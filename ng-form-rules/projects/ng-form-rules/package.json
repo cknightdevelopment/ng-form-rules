@@ -1,7 +1,7 @@
 {
   "name": "ng-form-rules",
-  "version": "1.0.0-alpha.8",
-  "description": "Simple, powerful, and customizable reactive forms rule engine library for angular.",
+  "version": "1.0.0-alpha.9",
+  "description": "Simple, powerful, and customizable rule engine library for Angular reactive forms.",
   "keywords": [
     "angular", "reactive forms", "rule engine", "validation"
   ],

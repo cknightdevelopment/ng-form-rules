@@ -4,13 +4,13 @@
         "directive-selector": [
             true,
             "attribute",
-            "samples",
+            "playground",
             "camelCase"
         ],
         "component-selector": [
             true,
             "element",
-            "samples",
+            "playground",
             "kebab-case"
         ]
     }

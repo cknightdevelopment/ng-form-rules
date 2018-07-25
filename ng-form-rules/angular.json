@@ -43,11 +43,11 @@
         }
       }
     },
-    "ng-form-rules-samples": {
-      "root": "projects/ng-form-rules-samples/",
-      "sourceRoot": "projects/ng-form-rules-samples/src",
+    "ng-form-rules-playground": {
+      "root": "projects/ng-form-rules-playground/",
+      "sourceRoot": "projects/ng-form-rules-playground/src",
       "projectType": "application",
-      "prefix": "samples",
+      "prefix": "playground",
       "schematics": {
         "@schematics/angular:class": {
           "spec": false
@@ -75,17 +75,17 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/ng-form-rules-samples",
-            "index": "projects/ng-form-rules-samples/src/index.html",
-            "main": "projects/ng-form-rules-samples/src/main.ts",
-            "polyfills": "projects/ng-form-rules-samples/src/polyfills.ts",
-            "tsConfig": "projects/ng-form-rules-samples/tsconfig.app.json",
+            "outputPath": "dist/ng-form-rules-playground",
+            "index": "projects/ng-form-rules-playground/src/index.html",
+            "main": "projects/ng-form-rules-playground/src/main.ts",
+            "polyfills": "projects/ng-form-rules-playground/src/polyfills.ts",
+            "tsConfig": "projects/ng-form-rules-playground/tsconfig.app.json",
             "assets": [
-              "projects/ng-form-rules-samples/src/favicon.ico",
-              "projects/ng-form-rules-samples/src/assets"
+              "projects/ng-form-rules-playground/src/favicon.ico",
+              "projects/ng-form-rules-playground/src/assets"
             ],
             "styles": [
-              "projects/ng-form-rules-samples/src/styles.css"
+              "projects/ng-form-rules-playground/src/styles.css"
             ],
             "scripts": []
           },
@@ -93,8 +93,8 @@
             "production": {
               "fileReplacements": [
                 {
-                  "replace": "projects/ng-form-rules-samples/src/environments/environment.ts",
-                  "with": "projects/ng-form-rules-samples/src/environments/environment.prod.ts"
+                  "replace": "projects/ng-form-rules-playground/src/environments/environment.ts",
+                  "with": "projects/ng-form-rules-playground/src/environments/environment.prod.ts"
                 }
               ],
               "optimization": true,
@@ -112,34 +112,34 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "ng-form-rules-samples:build"
+            "browserTarget": "ng-form-rules-playground:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "ng-form-rules-samples:build:production"
+              "browserTarget": "ng-form-rules-playground:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "ng-form-rules-samples:build"
+            "browserTarget": "ng-form-rules-playground:build"
           }
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "projects/ng-form-rules-samples/src/test.ts",
-            "polyfills": "projects/ng-form-rules-samples/src/polyfills.ts",
-            "tsConfig": "projects/ng-form-rules-samples/tsconfig.spec.json",
-            "karmaConfig": "projects/ng-form-rules-samples/karma.conf.js",
+            "main": "projects/ng-form-rules-playground/src/test.ts",
+            "polyfills": "projects/ng-form-rules-playground/src/polyfills.ts",
+            "tsConfig": "projects/ng-form-rules-playground/tsconfig.spec.json",
+            "karmaConfig": "projects/ng-form-rules-playground/karma.conf.js",
             "styles": [
-              "projects/ng-form-rules-samples/src/styles.css"
+              "projects/ng-form-rules-playground/src/styles.css"
             ],
             "scripts": [],
             "assets": [
-              "projects/ng-form-rules-samples/src/favicon.ico",
-              "projects/ng-form-rules-samples/src/assets"
+              "projects/ng-form-rules-playground/src/favicon.ico",
+              "projects/ng-form-rules-playground/src/assets"
             ]
           }
         },
@@ -147,8 +147,8 @@
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "projects/ng-form-rules-samples/tsconfig.app.json",
-              "projects/ng-form-rules-samples/tsconfig.spec.json"
+              "projects/ng-form-rules-playground/tsconfig.app.json",
+              "projects/ng-form-rules-playground/tsconfig.spec.json"
             ],
             "exclude": [
               "**/node_modules/**"
@@ -157,21 +157,21 @@
         }
       }
     },
-    "ng-form-rules-samples-e2e": {
-      "root": "projects/ng-form-rules-samples-e2e/",
+    "ng-form-rules-playground-e2e": {
+      "root": "projects/ng-form-rules-playground-e2e/",
       "projectType": "application",
       "architect": {
         "e2e": {
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
-            "protractorConfig": "projects/ng-form-rules-samples-e2e/protractor.conf.js",
-            "devServerTarget": "ng-form-rules-samples:serve"
+            "protractorConfig": "projects/ng-form-rules-playground-e2e/protractor.conf.js",
+            "devServerTarget": "ng-form-rules-playground:serve"
           }
         },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
-            "tsConfig": "projects/ng-form-rules-samples-e2e/tsconfig.e2e.json",
+            "tsConfig": "projects/ng-form-rules-playground-e2e/tsconfig.e2e.json",
             "exclude": [
               "**/node_modules/**"
             ]

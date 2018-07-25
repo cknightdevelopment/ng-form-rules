@@ -38,7 +38,7 @@ describe('RulesEngineService', () => {
                         { name: "rogue"},
                     ]
                 },
-                { provide: TRACE_SETTINGS_TOKEN, useValue: true }
+                { provide: TRACE_SETTINGS_TOKEN, useValue: false }
             ]
         });
 

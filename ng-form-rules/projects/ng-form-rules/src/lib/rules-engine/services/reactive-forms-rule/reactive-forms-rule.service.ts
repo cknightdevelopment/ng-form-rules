@@ -174,7 +174,7 @@ export class ReactiveFormsRuleService {
     }
 
     private buildArray<T>(property: ArrayItemProperty<T>, initialValue?: any[]): FormArray {
-        initialValue = Array.isArray(initialValue) ? initialValue : [null];
+        initialValue = Array.isArray(initialValue) ? initialValue : [];
 
         return this.formBuilder.array(initialValue.map(v => this.buildAbstractControl(property, v)));
     }
