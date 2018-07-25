@@ -7,7 +7,7 @@
     "start": "ng serve ng-form-rules-playground",
     "build": "ng build ng-form-rules",
     "build:prod": "ng build ng-form-rules --prod",
-    "build:npm": "ng build ng-form-rules --prod && copyfiles ../README.md ./dist/ng-form-rules/README.md && echo README copied successfully",
+    "build:npm": "ng build ng-form-rules --prod && copyfiles ../README.md ./dist/lib/README.md && echo README copied successfully",
     "test": "ng test ng-form-rules --browsers ChromeNoSandbox --source-map false",
     "test:once": "ng test ng-form-rules --watch=false --browsers ChromeNoSandbox --progress false --code-coverage",
     "test:ci": "ng test ng-form-rules --watch=false --browsers ChromeNoSandbox --progress false --code-coverage",
