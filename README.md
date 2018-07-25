@@ -121,11 +121,11 @@ Now you can use the `FormGroup` in a template.
 
 ```html
 <form [formGroup]="form">
-	<div>
-		<label for="name">Name: </label>
-		<input type="text" id="name" formControlName="name" />
-		<pre *ngIf="form.get('name').errors">{{ form.get('name').errors | json }}</pre>
-	</div>
+  <div>
+    <label for="name">Name: </label>
+    <input type="text" id="name" formControlName="name" />
+    <pre *ngIf="form.get('name').errors">{{ form.get('name').errors | json }}</pre>
+  </div>
 </form>
 ```
 
