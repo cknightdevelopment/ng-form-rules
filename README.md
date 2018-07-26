@@ -47,7 +47,7 @@ Simple, powerful, and customizable rule engine library for Angular reactive form
 
 ## <a id="getting-started"></a>Getting Started
 
-[View example in action][sb-getting-started]
+:zap: [View example in action][sb-getting-started] :zap:
 
 To use `ng-form-rules` in your app you need to import the `FormRulesModule` into one of your Angular modules (most likely the main `AppModule`).
 
