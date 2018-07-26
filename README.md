@@ -31,13 +31,13 @@ Simple, powerful, and customizable rule engine library for Angular reactive form
 
 ## <a id="do"></a>What does `ng-form-rules` do?
 
-* Generate Angular reactive form controls (`FormGroup`, `FormArray`, and `FormControl`) based upon powerful model setting configurations
+* Generate Angular reactive form controls (`FormGroup`, `FormArray`, and `FormControl`) based upon model setting configurations
     * Model settings have a collection of properties that have tests & rules dictating whether they are valid and/or editable
     * Model settings won't clutter your model classes and can be re-used as much as you'd like
 * Rules can be as simple or complex as you want; you have full control
     * Rules can react to changes in other properties in the form, whether at the same level, nested, in an array item, or at a parent's level
     * Rules can be synchronous or asynchronous
-    * All of the rules in your model settings will automatically be integrated into the form
+    * All of the rules in your model settings will automatically be integrated seamlessly into your form
 * You are never blocked! The form controls we generate are no different than what you already use in Angular. You can manipulate them, add controls, add validators from outside `ng-form-rules`, etc.
 
 ## <a id="not-do"></a>What does `ng-form-rules` **NOT** do?
