@@ -143,7 +143,7 @@ We have links to pertinent examples throughout our [documentation][link-wiki], o
 
 <!-- LINK REFERENCES GO HERE -->
 [link-wiki]: https://github.com/cknightdevelopment/ng-form-rules/wiki
-[link-examples]: https://github.com/cknightdevelopment/ng-form-rules/wiki/examples
+[link-examples]: https://github.com/cknightdevelopment/ng-form-rules/wiki/examples-list
 [link-stackblitz]: https://stackblitz.com/github/cknightdevelopment/ng-form-rules-examples
 [link-examples-repo]: https://github.com/cknightdevelopment/ng-form-rules-examples
 [link-getting-started]: https://stackblitz.com/edit/ngfr-getting-started?embed=1&file=src/app/app.component.ts
