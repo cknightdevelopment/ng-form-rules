@@ -26,6 +26,7 @@ import { AddArrayItemPropertyOptions } from "../../../form-rules/models/add-arra
 export class ReactiveFormsRuleService {
     private static readonly FORM_MODEL_SETTINGS_PROPERTY_NAME = 'ngFormRulesModelSetting';
     private static readonly FORCE_ASYNC_VALID_TEST_RUN_PROPERTY_NAME = 'ngFormRulesForceAsyncValidTestRun';
+    private static readonly CONTROL_LAST_ERROR = 'ngFormRulesControlLastError';
 
     constructor(
         private rulesEngineSvc: RulesEngineService,
@@ -117,7 +118,7 @@ export class ReactiveFormsRuleService {
         if (!validator) return;
 
         const validatorArray = Array.isArray(validator) ? validator : [validator];
-        control.setValidators([control.validator,  ...validatorArray]
+        control.setValidators([control.validator, ...validatorArray]
             .filter(validatorFn => !!validatorFn));
     }
 
@@ -130,7 +131,7 @@ export class ReactiveFormsRuleService {
         if (!asyncValidator) return;
 
         const asyncValidatorArray = Array.isArray(asyncValidator) ? asyncValidator : [asyncValidator];
-        control.setAsyncValidators([control.asyncValidator,  ...asyncValidatorArray]
+        control.setAsyncValidators([control.asyncValidator, ...asyncValidatorArray]
             .filter(asyncValidatorFn => !!asyncValidatorFn));
     }
 
@@ -210,7 +211,18 @@ export class ReactiveFormsRuleService {
         const valid$ = values.pipe(
             this.applyAsyncValidValueChangeOptions(property.valueChangeOptions.self.asyncValid),
             switchMap(x => {
-                return x.passthrough ? of(null) : rawAsyncFunc(x.control);
+                // pass through means we did not execute the ng-form-rules async tests
+                if (x.passthrough) {
+                    const currentErrors = x.control.errors || {};
+                    const lastNgFormRulesErrors = this.getLastErrorForControl(x.control);
+
+                    // return the last ng-form-rules errors (if any) alongside non ng-form-rules errors.
+                    // this handles scenario where debounce and distinct are used and state goes from:
+                    //    invalid -> make changes and back them out -> valid
+                    return of(Object.assign(currentErrors, { ngFormRules: lastNgFormRulesErrors } as ReactiveFormsValidationErrors));
+                } else {
+                    return rawAsyncFunc(x.control);
+                }
             }),
             take(1)
         );
@@ -238,7 +250,8 @@ export class ReactiveFormsRuleService {
                             this.buildTestResultStatsString(testResults));
                     }
                 }),
-                map(this.mapToReactiveFormsValidationErrors)
+                map(this.mapToReactiveFormsValidationErrors),
+                tap(x => this.setLastErrorForControl(control, (x || {}).ngFormRules))
             );
         };
     }
@@ -333,9 +346,9 @@ export class ReactiveFormsRuleService {
             }
 
             if (testResults.passed && propertyControl.disabled)
-                propertyControl.enable({emitEvent: false});
+                propertyControl.enable({ emitEvent: false });
             else if (!testResults.passed && propertyControl.enabled)
-                propertyControl.disable({emitEvent: false});
+                propertyControl.disable({ emitEvent: false });
         });
     }
 
@@ -366,7 +379,7 @@ export class ReactiveFormsRuleService {
                     if (!x.passthrough) lastValue = x.control.value;
                 })
             );
-          };
+        };
     }
 
     private applyValueChangeOptions(valueChangeOptions: ValueChangeOptions): OperatorFunction<any, any> {
@@ -441,7 +454,7 @@ export class ReactiveFormsRuleService {
     private buildControlRelativePathArray(relativePath: string): string[] {
         const result: string[] = [];
 
-        if (!relativePath || typeof relativePath !== "string" ) return result;
+        if (!relativePath || typeof relativePath !== "string") return result;
 
         // takes care of './', '../', and '/'
         const slashSeparated = relativePath.split("/");
@@ -489,6 +502,14 @@ export class ReactiveFormsRuleService {
 
     private setForceAsyncValidationTestForControl(control: AbstractControl, force: boolean): void {
         control[ReactiveFormsRuleService.FORCE_ASYNC_VALID_TEST_RUN_PROPERTY_NAME] = force;
+    }
+
+    private setLastErrorForControl(control: AbstractControl, errors: ReactiveFormsValidationErrorsData): void {
+        control[ReactiveFormsRuleService.CONTROL_LAST_ERROR] = errors;
+    }
+
+    private getLastErrorForControl(control: AbstractControl): ReactiveFormsValidationErrorsData {
+        return control[ReactiveFormsRuleService.CONTROL_LAST_ERROR];
     }
 
     private doesControlHaveForcedAsyncValidation(control: AbstractControl): boolean {

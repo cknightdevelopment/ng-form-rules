@@ -874,5 +874,62 @@ describe('ReactiveFormsRuleService', () => {
                 expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
             });
         });
+
+        describe('misc', () => {
+            const debounceMilliseconds = 5000;
+            let settings: AbstractModelSettings<Person>;
+            let spies: {
+                selfAsyncValidFunc: jasmine.Spy
+            };
+            const container = {
+                selfAsyncValidFunc: (sanityCheck: string) => { },
+            };
+
+            beforeEach(() => {
+                settings = AdhocModelSettings.create<Person>(b => {
+                    return [
+                        b.property('name', p => {
+                            p.valueChangeOptions.self.asyncValid = {
+                                debounceMilliseconds: debounceMilliseconds,
+                                distinctUntilChanged: true
+                            };
+
+                            p.valid.push(b.validTest('',
+                                b.ruleAsync(x => {
+                                    container.selfAsyncValidFunc('self valid async');
+                                    return of(x.name != 'chris');
+                                })));
+                        }),
+                    ];
+                });
+
+                spies = {
+                    selfAsyncValidFunc: spyOn(container, 'selfAsyncValidFunc'),
+                };
+            });
+
+            it('should handle debounce and distinct when no "real" value change before debounce timer expires', fakeAsync(() => {
+                // set to invalid value and make sure control is invalid
+                const form = svc.createFormGroup(settings, { name: 'chris' });
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+                expect(form.get('name').valid).toBeFalsy();
+                spies.selfAsyncValidFunc.calls.reset();
+
+                // set to valid value and then back to the SAME invalid value as initially set BEFORE debounce timer expires
+                form.get('name').setValue('sarah');
+                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
+                form.get('name').setValue('chris');
+                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
+
+                // debounce timer completes
+                tick(debounceMilliseconds);
+                discardPeriodicTasks();
+
+                // should not have been called, and should still be invalid control
+                expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
+                expect(form.get('name').valid).toBeFalsy();
+            }));
+        });
     });
 });

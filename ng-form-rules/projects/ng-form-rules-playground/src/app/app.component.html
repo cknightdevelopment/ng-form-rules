@@ -3,17 +3,20 @@
         <h1>ng-form-rules sandbox</h1>
     </div>
 
-    <button type="button" (click)="addPerson()">Add Person</button>
-
     <div class="show-errors">
         <form [formGroup]="form">
-            <h5>People</h5>
-            <div formArrayName="people">
-                <div class="form-group" *ngFor="let person of form.get('people').controls; let i=index" [formGroupName]="i">
-                    <label for="name-{{i}}">Person {{i + 1}}</label>
-                    <input type="text" class="form-control" id="name-{{i}}" formControlName="name" />
-                    <playground-json-errors [control]="person.get('name')"></playground-json-errors>
-                </div>
+            <div>
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" formControlName="name" />
+                {{form.get('name').status}}
+                <playground-json-errors [control]="form.get('name')"></playground-json-errors>
+            </div>
+
+            <div>
+                <label for="age">age</label>
+                <input type="number" class="form-control" id="age" formControlName="age" />
+                {{form.get('age').status}}
+                <playground-json-errors [control]="form.get('age')"></playground-json-errors>
             </div>
         </form>
     </div>
