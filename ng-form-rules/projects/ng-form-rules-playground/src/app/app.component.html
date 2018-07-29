@@ -3,20 +3,44 @@
         <h1>ng-form-rules sandbox</h1>
     </div>
 
+    <button type="button" (click)="add()">Add</button>
+
     <div class="show-errors">
         <form [formGroup]="form">
-            <div>
-                <label for="name">Name</label>
-                <input type="text" class="form-control" id="name" formControlName="name" />
-                {{form.get('name').status}}
-                <playground-json-errors [control]="form.get('name')"></playground-json-errors>
-            </div>
+            <div formArrayName="addresses">
+                <div *ngFor="let addr of form.get('addresses').controls; let i=index" [formGroupName]="i">
+                    <div>
+                        <label for="street-{{i}}">Street {{i + 1}}: </label>
+                        <input type="text" id="street-{{i}}" formControlName="street" />
+                        <pre *ngIf="addr.get('street').errors">{{ addr.get('street').errors | json }}</pre>
+                    </div>
 
-            <div>
-                <label for="age">age</label>
-                <input type="number" class="form-control" id="age" formControlName="age" />
-                {{form.get('age').status}}
-                <playground-json-errors [control]="form.get('age')"></playground-json-errors>
+                    <div>
+                        <label for="canEdit-{{i}}">Can Edit {{i + 1}}: </label>
+                        <input type="checkbox" id="canEdit-{{i}}" formControlName="canEdit" />
+                        <pre *ngIf="addr.get('canEdit').errors">{{ addr.get('canEdit').errors | json }}</pre>
+                    </div>
+
+                    <div style="margin-left: 20px;">
+                        <div formArrayName="addresses">
+                            <div *ngFor="let addr2 of addr.get('addresses').controls; let j=index" [formGroupName]="j">
+                                <div>
+                                    <label for="street-{{j}}">Street {{j + 1}}: </label>
+                                    <input type="text" id="street-{{j}}" formControlName="street" />
+                                    <pre *ngIf="addr2.get('street').errors">{{ addr2.get('street').errors | json }}</pre>
+                                </div>
+            
+                                <div>
+                                    <label for="canEdit-{{j}}">Can Edit {{j + 1}}: </label>
+                                    <input type="checkbox" id="canEdit-{{j}}" formControlName="canEdit" />
+                                    <pre *ngIf="addr2.get('canEdit').errors">{{ addr2.get('canEdit').errors | json }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    
+                </div>
             </div>
         </form>
     </div>

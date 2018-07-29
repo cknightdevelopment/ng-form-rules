@@ -70,7 +70,7 @@ export class ReactiveFormsRuleService {
         const formGroup = this.buildGroup(settings.properties, initialValue);
 
         this.traceSvc.trace(`Setting up dependency subscriptions`);
-        this.setupDependencySubscriptions(formGroup, settings.properties);
+        this.resetDependencySubscriptions(formGroup, settings.properties);
 
         this.traceSvc.trace(`Patching form group with initial value`);
         this.triggerValueChange(formGroup);
@@ -102,7 +102,7 @@ export class ReactiveFormsRuleService {
             parentFormArray.insert(options.index, control);
 
         const modelSettings = this.getModelSettingsFromForm(parentFormArray.root as FormGroup);
-        this.setupDependencySubscriptions(parentFormArray.root, modelSettings.properties);
+        this.resetDependencySubscriptions(parentFormArray.root, modelSettings.properties);
 
         // we need to do this because the item could have been added at any index in the array, and we need
         // trigger a value change to trigger any dependency propertiy valdidations
@@ -256,15 +256,36 @@ export class ReactiveFormsRuleService {
         };
     }
 
-    private setupDependencySubscriptions<T>(parentControl: AbstractControl, properties: PropertyBase<T>[], arrayIndex?: number): void {
+    private resetDependencySubscriptions<T>(
+        parentControl: AbstractControl,
+        properties: PropertyBase<T>[],
+    ): void {
+        this.removeDependencySubscriptions(properties);
+        this.addDependencySubscriptions(parentControl, properties);
+    }
+
+    private removeDependencySubscriptions<T>(
+        properties: PropertyBase<T>[]
+    ): void {
         (properties || []).forEach(property => {
-            // remove any existing dependency property subscriptions
-            if (property.dependencyPropertySubscriptions.length
-                && (!this.commonSvc.isZeroOrGreater(arrayIndex) || arrayIndex === 0)
-            ) {
-                property.clearDependencyPropertySubscriptions();
+            property.clearDependencyPropertySubscriptions();
+
+            if (property.properties) {
+                this.removeDependencySubscriptions(property.properties);
             }
 
+            if (property.arrayItemProperty) {
+                this.removeDependencySubscriptions([property.arrayItemProperty]);
+            }
+        });
+    }
+
+    private addDependencySubscriptions<T>(
+        parentControl: AbstractControl,
+        properties: PropertyBase<T>[],
+        arrayIndex?: number
+    ): void {
+        (properties || []).forEach(property => {
             const propertyControl = this.getPropertyFromParent(parentControl, property, arrayIndex);
             if (!propertyControl) return;
 
@@ -272,14 +293,14 @@ export class ReactiveFormsRuleService {
             this.setupValidationDependencySubscriptions(propertyControl, parentControl, property);
 
             if (property.properties) {
-                this.setupDependencySubscriptions(propertyControl, property.properties);
+                this.addDependencySubscriptions(propertyControl, property.properties);
             }
 
             if (property.arrayItemProperty) {
                 // if there is an arrayItemProperty we know that we are working with a FormArray control
                 const formArrayControl = (propertyControl as FormArray);
                 for (let i = 0; i < formArrayControl.length; i++) {
-                    this.setupDependencySubscriptions(formArrayControl, [property.arrayItemProperty], i);
+                    this.addDependencySubscriptions(formArrayControl, [property.arrayItemProperty], i);
                 }
             }
         });

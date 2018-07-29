@@ -4,8 +4,13 @@ import { FormGroup, FormArray } from '@angular/forms';
 import { of } from 'rxjs';
 
 interface Person {
-    name: string;
-    age: number;
+    addresses: Address[];
+}
+
+interface Address {
+    street: string;
+    canEdit: boolean;
+    addresses: Address[];
 }
 
 @Component({
@@ -20,20 +25,55 @@ export class AppComponent implements OnInit {
     constructor(private svc: ReactiveFormsRuleService) {
     }
 
+    add() {
+        this.svc.addArrayItemPropertyControl(
+            this.settings.properties.find(x => x.name === 'addresses').arrayItemProperty,
+            this.form.get('addresses') as FormArray,
+            {canEdit: true, street: 'NEW', addresses: [ { canEdit: true, street: 'NEW' }, { canEdit: true, street: 'NEW' } ]} as Address
+        );
+    }
+
     ngOnInit(): void {
         this.settings = AdhocModelSettings.create<Person>(builder => {
             return [
-                builder.property('name', prop => {
-                    prop.edit.push(builder.editTest(
-                        builder.ruleAsync(person => of(person.age == 1), {
-                            dependencyProperties: ['age']
-                        })
-                    ));
+                builder.property('addresses', prop => {
+                    prop.arrayItemProperty = builder.arrayItemProperty(aip => {
+                        aip.properties = [
+                            builder.property<Address>('canEdit'),
+                            builder.property<Address>('street', streetProp => {
+                                streetProp.edit.push(builder.editTest(
+                                    builder.rule(x => !!x.canEdit, { dependencyProperties: ['canEdit'] })
+                                ));
+                            }),
+                            builder.property('addresses', addrProp => {
+                                addrProp.arrayItemProperty = builder.arrayItemProperty(aip2 => {
+                                    aip2.properties = [
+                                        builder.property<Address>('canEdit'),
+                                        builder.property<Address>('street', streetProp => {
+                                            streetProp.edit.push(builder.editTest(
+                                                builder.rule(x => !!x.canEdit, { dependencyProperties: ['canEdit'] })
+                                            ));
+                                        }),
+                                    ];
+                                });
+                            })
+                        ];
+                    });
                 }),
-                builder.property('age')
             ];
         });
 
-        this.form = this.svc.createFormGroup(this.settings);
+        this.form = this.svc.createFormGroup(this.settings, {
+            addresses: [
+                { street: 'abs', canEdit: true, addresses: [
+                    { street: 'aaa', canEdit: true },
+                    { street: 'bbb', canEdit: true },
+                ] },
+                { street: 'xyz', canEdit: true, addresses: [
+                    { street: 'xxx', canEdit: true },
+                    { street: 'yyy', canEdit: true },
+                ] },
+            ]
+        } as Person);
     }
 }
