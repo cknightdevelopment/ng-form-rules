@@ -137,6 +137,8 @@ This was obviously a simple example and we know the real-world demands on forms 
 
 ## <a id="examples"></a>Examples
 
+Watch our ["Let’s Build a Registration Form"](https://www.youtube.com/watch?v=eL3Gp1cGBJQ) video for a great walkthrough of several key features of the library.
+
 We have links to pertinent examples throughout our [documentation][link-wiki], or you can just pick from a [list of our examples][link-examples]. We use StackBlitz for all our examples, which allows you to fully interact, fork, and edit them.
 
 ## <a id="license"></a> [License][link-mit-license]
