@@ -3,44 +3,12 @@
         <h1>ng-form-rules sandbox</h1>
     </div>
 
-    <button type="button" (click)="add()">Add</button>
-
     <div class="show-errors">
-        <form [formGroup]="form">
-            <div formArrayName="addresses">
-                <div *ngFor="let addr of form.get('addresses').controls; let i=index" [formGroupName]="i">
-                    <div>
-                        <label for="street-{{i}}">Street {{i + 1}}: </label>
-                        <input type="text" id="street-{{i}}" formControlName="street" />
-                        <pre *ngIf="addr.get('street').errors">{{ addr.get('street').errors | json }}</pre>
-                    </div>
-
-                    <div>
-                        <label for="canEdit-{{i}}">Can Edit {{i + 1}}: </label>
-                        <input type="checkbox" id="canEdit-{{i}}" formControlName="canEdit" />
-                        <pre *ngIf="addr.get('canEdit').errors">{{ addr.get('canEdit').errors | json }}</pre>
-                    </div>
-
-                    <div style="margin-left: 20px;">
-                        <div formArrayName="addresses">
-                            <div *ngFor="let addr2 of addr.get('addresses').controls; let j=index" [formGroupName]="j">
-                                <div>
-                                    <label for="street-{{j}}">Street {{j + 1}}: </label>
-                                    <input type="text" id="street-{{j}}" formControlName="street" />
-                                    <pre *ngIf="addr2.get('street').errors">{{ addr2.get('street').errors | json }}</pre>
-                                </div>
-            
-                                <div>
-                                    <label for="canEdit-{{j}}">Can Edit {{j + 1}}: </label>
-                                    <input type="checkbox" id="canEdit-{{j}}" formControlName="canEdit" />
-                                    <pre *ngIf="addr2.get('canEdit').errors">{{ addr2.get('canEdit').errors | json }}</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    
-                </div>
+        <form [formGroup]="form" (submit)="submit()">
+            <div>
+                <label for="name">Name: </label>
+                <input type="text" id="name" formControlName="name" />
+                <pre *ngIf="form.get('name')">{{ form.get('name').errors | json }}</pre>
             </div>
         </form>
     </div>

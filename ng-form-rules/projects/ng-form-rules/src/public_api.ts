@@ -38,6 +38,7 @@ export * from './lib/form-rules/models/add-array-item-property-options';
 export * from './lib/form-rules/models/value-change-options';
 export * from './lib/form-rules/models/rule-group-options';
 export * from './lib/form-rules/models/results-pass-requirement';
+export * from './lib/form-rules/models/update-on';
 
 // other
 export * from './lib/form-rules/helper/model-settings-builder';

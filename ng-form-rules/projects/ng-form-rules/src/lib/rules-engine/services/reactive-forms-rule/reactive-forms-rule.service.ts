@@ -17,6 +17,7 @@ import { CommonService } from "../../../utils/common/common.service";
 import { AbstractModelSettings } from "../../../form-rules/models/abstract-model-settings";
 import { ValueChangeOptions } from "../../../form-rules/models/value-change-options";
 import { AddArrayItemPropertyOptions } from "../../../form-rules/models/add-array-item-property-options";
+import { UpdateOn } from "../../../form-rules/models/update-on";
 // tslint:enable:max-line-length
 
 /**
@@ -75,6 +76,7 @@ export class ReactiveFormsRuleService {
         this.traceSvc.trace(`Patching form group with initial value`);
         this.triggerValueChange(formGroup);
 
+        this.traceSvc.trace(`Attaching model settings to form`);
         this.attachModelSettingsToForm(formGroup, settings);
 
         return formGroup;
@@ -138,9 +140,9 @@ export class ReactiveFormsRuleService {
     private buildAbstractControl<T>(property: PropertyBase<T>, initialValue?: any): AbstractControl {
         let control: AbstractControl;
 
-        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, initialValue);
-        else if (property.properties) control = this.buildGroup(property.properties, initialValue);
-        else control = this.buildControl(initialValue);
+        if (property.arrayItemProperty) control = this.buildArray(property.arrayItemProperty, initialValue, property.updateOn);
+        else if (property.properties) control = this.buildGroup(property.properties, initialValue, property.updateOn);
+        else control = this.buildControl(initialValue, property.updateOn);
 
         // setup validation tests on value change
         control.setValidators(this.buildValidatorFunction(property));
@@ -158,15 +160,15 @@ export class ReactiveFormsRuleService {
         return control;
     }
 
-    private buildControl<T>(initialValue?: any): FormControl {
-        return this.formBuilder.control(initialValue || null);
+    private buildControl<T>(initialValue: any, updateOn?: UpdateOn): FormControl {
+        return new FormControl(initialValue, { updateOn: updateOn });
     }
 
-    private buildGroup<T>(properties: Property<T>[], value?: any): FormGroup {
-        const formGroup = this.formBuilder.group({});
+    private buildGroup<T>(properties: Property<T>[], initialValue: any, updateOn?: UpdateOn): FormGroup {
+        const formGroup = new FormGroup({}, { updateOn: updateOn });
 
         (properties || []).forEach(p => {
-            const propertyValue = value ? value[p.name] : null;
+            const propertyValue = initialValue ? initialValue[p.name] : null;
             const ctrl = this.buildAbstractControl(p, propertyValue);
             formGroup.addControl(p.name, ctrl);
         });
@@ -174,10 +176,13 @@ export class ReactiveFormsRuleService {
         return formGroup;
     }
 
-    private buildArray<T>(property: ArrayItemProperty<T>, initialValue?: any[]): FormArray {
+    private buildArray<T>(property: ArrayItemProperty<T>, initialValue: any[], updateOn?: UpdateOn): FormArray {
         initialValue = Array.isArray(initialValue) ? initialValue : [];
 
-        return this.formBuilder.array(initialValue.map(v => this.buildAbstractControl(property, v)));
+        return new FormArray(
+            initialValue.map(v => this.buildAbstractControl(property, v)),
+            { updateOn: updateOn }
+        );
     }
 
     private buildValidatorFunction<T>(property: PropertyBase<T>): ValidatorFn {
