@@ -3,6 +3,7 @@ import { Property } from "./property";
 import { ArrayItemProperty } from "./array-item-property";
 import { Subscription } from "rxjs";
 import { ValueChangeOptions } from "./value-change-options";
+import { UpdateOn } from "./update-on";
 
 /**
  * Base class for a property
@@ -36,6 +37,11 @@ export abstract class PropertyBase<T> {
      * Property for an item of an array
      */
     arrayItemProperty?: ArrayItemProperty<any>;
+
+    /**
+     * The event name for control to update upon.
+     */
+    updateOn?: UpdateOn = 'change';
 
     /**
      * Absolute path to the property from root
