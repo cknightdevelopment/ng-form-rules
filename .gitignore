@@ -5,7 +5,6 @@ artifacts/
 
 ng-form-rules/**/dist/
 **/node_modules
-ng-form-rules/package-lock.json
 **/npm-debug.log*
 **/*.orig
 ng-form-rules/coverage
