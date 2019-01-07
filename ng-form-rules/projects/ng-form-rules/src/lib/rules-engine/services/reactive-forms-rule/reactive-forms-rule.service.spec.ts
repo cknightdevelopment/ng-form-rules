@@ -1,4 +1,4 @@
-import { TestBed, ComponentFixture, fakeAsync, tick, discardPeriodicTasks } from "@angular/core/testing";
+import { TestBed, ComponentFixture, fakeAsync, tick, discardPeriodicTasks, async } from "@angular/core/testing";
 import { ReactiveFormsRuleService } from "./reactive-forms-rule.service";
 import { ReactiveFormsModule, FormArray, FormGroup, Validators, AbstractControl, FormControl } from "@angular/forms";
 import { RulesEngineService } from "../rules-engine/rules-engine.service";
@@ -13,8 +13,45 @@ import { of } from "rxjs";
 import { ArrayItemProperty } from "../../../form-rules/models/array-item-property";
 import { AdhocModelSettings } from "../../../form-rules/models/adhoc-model-settings";
 import { ReactiveFormsValidationErrors } from "../../../form-rules/models/reactive-forms-validation-errors";
+import { Component } from "@angular/core";
+import { FormRulesModule } from "../../../form-rules/form-rules.module";
+import { By } from "@angular/platform-browser";
 
 const registeredSettingsKey = 'registeredSettings';
+
+@Component({
+    providers: [],
+    template: `
+        <form [formGroup]="fg">
+            <input type="text" id="name" formControlName="name" />
+            <input type="text" id="age" formControlName="age" />
+        </form>
+`
+})
+class UpdateOnComponent {
+    private settings = AdhocModelSettings.create<Person>(builder => {
+        return [
+            builder.property('name', p => {
+                p.updateOn = 'submit';
+                p.valid = [
+                    builder.validTest('Required', builder.rule(person => !!person.name))
+                ];
+            }),
+            builder.property('age', p => {
+                p.updateOn = 'blur';
+                p.valid = [
+                    builder.validTest('Required', builder.rule(person => !!person.age))
+                ];
+            }),
+        ];
+    });
+
+    fg: FormGroup;
+
+    constructor(svc: ReactiveFormsRuleService) {
+        this.fg = svc.createFormGroup(this.settings);
+    }
+}
 
 class RegisteredSettings extends AbstractModelSettings<Person> {
     protected buildProperties(): Property<Person>[] {
@@ -31,10 +68,13 @@ class RegisteredSettings extends AbstractModelSettings<Person> {
 
 describe('ReactiveFormsRuleService', () => {
     let svc: ReactiveFormsRuleService;
+    let updateOnComponent: UpdateOnComponent;
+    let updateOnFixture: ComponentFixture<UpdateOnComponent>;
 
-    beforeEach(() => {
+    beforeEach(async(() => {
         TestBed.configureTestingModule({
             imports: [
+                ReactiveFormsModule,
                 ReactiveFormsModule,
                 UtilsModule
             ],
@@ -48,11 +88,18 @@ describe('ReactiveFormsRuleService', () => {
                     ]
                 },
                 { provide: TRACE_SETTINGS_TOKEN, useValue: false }
+            ],
+            declarations: [
+                UpdateOnComponent
             ]
-        });
+        }).compileComponents().then(() => {
+            updateOnFixture = TestBed.createComponent(UpdateOnComponent);
+            updateOnComponent = updateOnFixture.componentInstance;
+            svc = TestBed.get(ReactiveFormsRuleService);
 
-        svc = TestBed.get(ReactiveFormsRuleService);
-    });
+            updateOnFixture.detectChanges();
+        });
+    }));
 
     it('should be created', () => {
         expect(svc).toBeTruthy();
@@ -930,6 +977,48 @@ describe('ReactiveFormsRuleService', () => {
                 expect(spies.selfAsyncValidFunc).not.toHaveBeenCalled();
                 expect(form.get('name').valid).toBeFalsy();
             }));
+        });
+    });
+
+    describe('updateOn', () => {
+        it('should only update form values on submit when updateOn is submit', () => {
+            const nameControl = updateOnComponent.fg.get('name');
+            const nameInputNativeElement = updateOnFixture.debugElement.query(By.css('input#name')).nativeElement;
+            const testValue = 'some_value';
+
+            // set value on native element and dispatch input event
+            nameInputNativeElement.value = testValue;
+            nameInputNativeElement.dispatchEvent(new Event('input'));
+
+            updateOnFixture.detectChanges();
+
+            expect(nameInputNativeElement.value).toEqual(testValue);
+            expect(nameControl.value).toBeFalsy();
+
+            // now submit the form
+            updateOnFixture.debugElement.query(By.css('form')).triggerEventHandler('submit', null);
+
+            expect(nameControl.value).toBeTruthy();
+        });
+
+        it('should only update form values on blur when updateOn is blur', () => {
+            const ageControl = updateOnComponent.fg.get('age');
+            const ageInputNativeElement = updateOnFixture.debugElement.query(By.css('input#age')).nativeElement;
+            const testValue = 'test_value';
+
+            // set value on native element and dispatch input event
+            ageInputNativeElement.value = testValue;
+            ageInputNativeElement.dispatchEvent(new Event('input'));
+
+            updateOnFixture.detectChanges();
+
+            expect(ageInputNativeElement.value).toEqual(testValue);
+            expect(ageControl.value).toBeFalsy();
+
+            // now submit the form
+            ageInputNativeElement.dispatchEvent(new Event('blur'));
+
+            expect(ageControl.value).toBeTruthy();
         });
     });
 });
