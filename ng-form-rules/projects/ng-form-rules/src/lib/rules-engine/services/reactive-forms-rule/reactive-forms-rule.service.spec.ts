@@ -1015,7 +1015,7 @@ describe('ReactiveFormsRuleService', () => {
             expect(ageInputNativeElement.value).toEqual(testValue);
             expect(ageControl.value).toBeFalsy();
 
-            // now submit the form
+            // now fire blur event on the input
             ageInputNativeElement.dispatchEvent(new Event('blur'));
 
             expect(ageControl.value).toBeTruthy();
